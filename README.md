@@ -1,0 +1,2 @@
+# PulseAI
+AI Newsletter Project
