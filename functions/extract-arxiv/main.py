@@ -74,7 +74,8 @@ def fetch_ai_papers(days_ago=7, max_results=100):
                 'all_categories': result.categories,
                 'doi': result.doi,
                 'journal_ref': result.journal_ref,
-                'comments': result.comment
+                'comments': result.comment,
+                'ingest_timestamp': datetime.datetime.utcnow().isoformat()
             }
             papers_data.append(paper_info)
 
@@ -114,7 +115,7 @@ def task(request):
 
     # otherwise, process the data and save the artifact to GCS
     j_string = json.dumps(papers_data)
-    _path = f"raw/arxiv/date={yyyymmdd}"
+    _path = f"raw/arxiv"
     gcs_path = upload_to_gcs(bucket_name, path=_path, run_id=run_id, data=j_string)
 
     # return the metadata

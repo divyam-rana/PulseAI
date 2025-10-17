@@ -133,9 +133,14 @@ def task(request):
             "run_id": run_id,
         }, 200
 
+    # add ingest timestamp to each post
+    ingest_timestamp = datetime.datetime.utcnow().isoformat()
+    for post in posts:
+        post['ingest_timestamp'] = ingest_timestamp
+
     # otherwise, process the data and save the artifact to GCS
     j_string = json.dumps(posts)
-    _path = f"raw/reddit/subreddit={subreddit}/date={yyyymmdd}"
+    _path = f"raw/reddit"
     gcs_path = upload_to_gcs(bucket_name, path=_path, run_id=run_id, data=j_string)
 
     # return the metadata

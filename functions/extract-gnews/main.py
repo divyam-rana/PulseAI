@@ -111,9 +111,14 @@ def task(request):
             "run_id": run_id,
         }, 200
 
+    # add ingest timestamp to each article
+    ingest_timestamp = datetime.datetime.utcnow().isoformat()
+    for article in articles:
+        article['ingest_timestamp'] = ingest_timestamp
+
     # otherwise, process the data and save the artifact to GCS
     j_string = json.dumps(articles)
-    _path = f"raw/gnews/date={yyyymmdd}"
+    _path = f"raw/gnews"
     gcs_path = upload_to_gcs(bucket_name, path=_path, run_id=run_id, data=j_string)
 
     # return the metadata
@@ -123,4 +128,3 @@ def task(request):
         "bucket_name": gcs_path.get('bucket_name'),
         "blob_name": gcs_path.get('blob_name')
     }, 200
-
