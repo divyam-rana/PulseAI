@@ -1,0 +1,5 @@
+# Go back to the PulseAI directory (parent of functions)
+cd ..
+
+# Now run the deployment script from the correct location
+bash functions/deploy-functions.sh

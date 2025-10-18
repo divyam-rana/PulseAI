@@ -58,21 +58,17 @@ def task(request):
     client = bigquery.Client(project=project_id)
     table_ref = f"{project_id}.{dataset_id}.{table_id}"
     
-    # Configure load job
+    # Configure load job for DataFrame
     job_config = bigquery.LoadJobConfig(
-        source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
         write_disposition=bigquery.WriteDisposition.WRITE_APPEND,
         schema_update_options=[
             bigquery.SchemaUpdateOption.ALLOW_FIELD_RELAXATION
         ]
     )
     
-    # Convert DataFrame to newline-delimited JSON
-    json_data = df.to_json(orient='records', lines=True, date_format='iso')
-    
-    # Load data
-    job = client.load_table_from_json(
-        json.loads(f'[{json_data.replace(chr(10), ",")}]'),
+    # Load data using the DataFrame directly
+    job = client.load_table_from_dataframe(
+        df,
         table_ref,
         job_config=job_config
     )

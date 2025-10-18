@@ -65,7 +65,8 @@ def task(request):
         type_=bigquery.TimePartitioningType.DAY,
         field="published_at"
     )
-    table.clustering_fields = ["source.name"]
+    # Note: Cannot cluster on nested fields like source.name
+    # table.clustering_fields = ["source.name"]
     
     try:
         table = client.create_table(table, exists_ok=True)
