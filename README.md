@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # PulseAI
 AI Newsletter Project
 
