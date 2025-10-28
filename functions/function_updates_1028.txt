@@ -1,0 +1,38 @@
+### Arxiv ###
+
+#Schema#
+  - 
+#Extract#
+  - Line 23 Change Cloud Function Name:  url = "https://extract-arxiv-final-335360564911.us-central1.run.app" => url = "https://extract-arxiv-335360564911.us-central1.run.app"
+#Load#
+  - Line 38 Change Cloud Function Name: url = "https://load-arxiv-final-335360564911.us-central1.run.app" => url = "https://load-arxiv-335360564911.us-central1.run.app"
+
+
+### GNews ###
+
+#Schema#
+  - 
+#Extract#
+  - Line 23 Change Cloud Function Name: url = "https://gnews-final-deploymeny-335360564911.us-central1.run.app" => "https://extract-gnews-335360564911.us-central1.run.app"
+#Load#
+  -  Line 33 Change Cloud Function Name: url = "https://gnews-loader-final-335360564911.us-central1.run.app" => "https://load-gnews-335360564911.us-central1.run.app"
+
+
+### Reddit ###
+
+#Schema#
+  - Line 16 Change Cloud Function Name: url = "https://setup-reddit-final-335360564911.us-central1.run.app" => "https://setup-reddit-schema-335360564911.us-central1.run.app"
+  - 
+#Extract#
+  - Line 23 Change Cloud Function Name: url = "https://extract-reddit-final-335360564911.us-central1.run.app" => url = "https://extract-reddit-335360564911.us-central1.run.app"
+#Load#
+  - Line 39 Change Cloud Function Name: url = "https://load-reddit-final-335360564911.us-central1.run.app" => url = "https://load-reddit-335360564911.us-central1.run.app"
+
+### General Notes ###
+
+How were the following tables/DBs created, and what do they do?
+Can we combine them into a single DB to make it cleaner?
+How should we title them?
+  - dw
+  - pulse_ai_arxiv
+  - pulse_ai_db
