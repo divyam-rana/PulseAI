@@ -30,7 +30,7 @@ def call_load_articles(ti):
     # Get extracted articles from upstream task
     extracted_data = ti.xcom_pull(task_ids="extract_gnews_articles")
     
-    url = "https://gnews-loader-final-335360564911.us-central1.run.app"
+    url = "https://us-central1-pulseai-team3-ba882-fall25.cloudfunctions.net/load-gnews"
     
     # Send extracted data to load endpoint
     response = requests.post(url, json=extracted_data)
