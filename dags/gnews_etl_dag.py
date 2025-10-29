@@ -43,8 +43,9 @@ with DAG(
     default_args=default_args,
     description="ETL pipeline for GNews: setup schema → extract → load",
     schedule="@daily",
-    start_date=datetime(2025, 10, 1),
-    catchup=False,
+    start_date=datetime(2025, 10, 20),
+    catchup=True,
+    max_active_runs=2,
     tags=["gnews", "etl", "pulseai"],
 ) as dag:
 
