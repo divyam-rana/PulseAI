@@ -30,9 +30,9 @@ def task(request):
     table_id = f"{project_id}.{dataset_id}.posts"
     
     schema = [
-        bigquery.SchemaField("id", "STRING", mode="REQUIRED",
+        bigquery.SchemaField("id", "STRING", mode="NULLABLE",
                            description="Reddit post ID"),
-        bigquery.SchemaField("title", "STRING", mode="REQUIRED",
+        bigquery.SchemaField("title", "STRING", mode="NULLABLE",
                            description="Post title"),
         bigquery.SchemaField("author", "STRING", mode="NULLABLE",
                            description="Reddit username of post author"),
@@ -62,9 +62,9 @@ def task(request):
                            description="Spoiler flag"),
         bigquery.SchemaField("stickied", "BOOLEAN", mode="NULLABLE",
                            description="Pinned/stickied post flag"),
-        bigquery.SchemaField("ingest_timestamp", "TIMESTAMP", mode="REQUIRED",
+        bigquery.SchemaField("ingest_timestamp", "TIMESTAMP", mode="NULLABLE",
                            description="When data was extracted from Reddit API"),
-        bigquery.SchemaField("load_timestamp", "TIMESTAMP", mode="REQUIRED",
+        bigquery.SchemaField("load_timestamp", "TIMESTAMP", mode="NULLABLE",
                            description="When data was loaded into BigQuery"),
         bigquery.SchemaField("source_path", "STRING", mode="NULLABLE",
                            description="GCS path to raw JSON file"),
@@ -88,6 +88,7 @@ def task(request):
     
     return {
         "dataset": dataset_id,
-        "tables": ["posts"],
+        "table": "posts",
+        "table_id": table_id,
         "status": "success"
     }, 200

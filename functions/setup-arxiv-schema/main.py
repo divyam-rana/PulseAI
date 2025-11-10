@@ -30,9 +30,9 @@ def task(request):
     table_id = f"{project_id}.{dataset_id}.papers"
     
     schema = [
-        bigquery.SchemaField("arxiv_id", "STRING", mode="REQUIRED", 
+        bigquery.SchemaField("arxiv_id", "STRING", mode="NULLABLE", 
                            description="Unique arXiv paper identifier"),
-        bigquery.SchemaField("title", "STRING", mode="REQUIRED",
+        bigquery.SchemaField("title", "STRING", mode="NULLABLE",
                            description="Paper title"),
         bigquery.SchemaField("authors", "STRING", mode="REPEATED",
                            description="List of paper authors"),
@@ -54,9 +54,9 @@ def task(request):
                            description="Journal reference if published"),
         bigquery.SchemaField("comments", "STRING", mode="NULLABLE",
                            description="Author comments"),
-        bigquery.SchemaField("ingest_timestamp", "TIMESTAMP", mode="REQUIRED",
+        bigquery.SchemaField("ingest_timestamp", "TIMESTAMP", mode="NULLABLE",
                            description="When data was extracted from arXiv API"),
-        bigquery.SchemaField("load_timestamp", "TIMESTAMP", mode="REQUIRED",
+        bigquery.SchemaField("load_timestamp", "TIMESTAMP", mode="NULLABLE",
                            description="When data was loaded into BigQuery"),
         bigquery.SchemaField("source_path", "STRING", mode="NULLABLE",
                            description="GCS path to raw JSON file"),
@@ -80,6 +80,7 @@ def task(request):
     
     return {
         "dataset": dataset_id,
-        "tables": ["papers"],
+        "table": "papers",
+        "table_id": table_id,
         "status": "success"
     }, 200

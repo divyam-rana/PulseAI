@@ -9,21 +9,64 @@ import uuid
 project_id = 'pulseai-team3-ba882-fall25'
 bucket_name = 'pulse-ai-data-bucket'
 version_id = 'latest'
+aggregated_file_path = "raw/arxiv/aggregated_papers.json"
 
 ####################################################### helpers
 
-def upload_to_gcs(bucket_name, path, run_id, data):
-    """Uploads data to a Google Cloud Storage bucket."""
+def read_existing_data(bucket_name, blob_path):
+    """Reads existing JSON data from GCS, returns empty list if file doesn't exist."""
     client = storage.Client()
     bucket = client.bucket(bucket_name)
-    blob_name = f"{path}/{run_id}/data.json"
-    blob = bucket.blob(blob_name)
+    blob = bucket.blob(blob_path)
+    
+    try:
+        data = blob.download_as_string()
+        return json.loads(data)
+    except Exception as e:
+        print(f"No existing file found or error reading: {e}. Starting with empty list.")
+        return []
 
-    # Upload the data (here it's a serialized string)
-    blob.upload_from_string(data)
-    print(f"File {blob_name} uploaded to {bucket_name}.")
 
-    return {'bucket_name': bucket_name, 'blob_name': blob_name}
+def append_to_gcs(bucket_name, blob_path, new_data):
+    """Appends new data to an existing JSON file in GCS."""
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(blob_path)
+    
+    # Read existing data
+    existing_data = read_existing_data(bucket_name, blob_path)
+    
+    # Append new data
+    existing_data.extend(new_data)
+    
+    # Write back to GCS
+    json_string = json.dumps(existing_data)
+    blob.upload_from_string(json_string)
+    print(f"Successfully appended {len(new_data)} entries to {blob_path}. Total entries: {len(existing_data)}")
+    
+    return {
+        'bucket_name': bucket_name,
+        'blob_name': blob_path,
+        'total_entries': len(existing_data),
+        'new_entries': len(new_data)
+    }
+
+
+def convert_timestamp_to_bigquery_format(iso_timestamp):
+    """Convert ISO format timestamp to BigQuery TIMESTAMP format."""
+    if not iso_timestamp:
+        return None
+    
+    try:
+        # Parse ISO format timestamp (handle both with and without timezone)
+        iso_timestamp_clean = iso_timestamp.replace('Z', '+00:00')
+        dt = datetime.datetime.fromisoformat(iso_timestamp_clean)
+        
+        # Convert to BigQuery format (YYYY-MM-DD HH:MM:SS.ffffff)
+        return dt.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+    except Exception as e:
+        print(f"Error converting timestamp {iso_timestamp}: {e}")
+        return None
 
 
 def fetch_ai_papers(days_ago=7, max_results=100):
@@ -67,15 +110,15 @@ def fetch_ai_papers(days_ago=7, max_results=100):
                 'title': result.title,
                 'authors': author_names,
                 'summary': result.summary,
-                'published_date': result.published.isoformat(),
-                'updated_date': result.updated.isoformat(),
+                'published_date': convert_timestamp_to_bigquery_format(result.published.isoformat()),
+                'updated_date': convert_timestamp_to_bigquery_format(result.updated.isoformat()),
                 'pdf_url': result.pdf_url,
                 'primary_category': result.primary_category,
                 'all_categories': result.categories,
                 'doi': result.doi,
                 'journal_ref': result.journal_ref,
                 'comments': result.comment,
-                'ingest_timestamp': datetime.datetime.utcnow().isoformat()
+                'ingest_timestamp': convert_timestamp_to_bigquery_format(datetime.datetime.utcnow().isoformat())
             }
             papers_data.append(paper_info)
 
@@ -111,16 +154,16 @@ def task(request):
         return {
             "num_entries": 0,
             "run_id": run_id,
+            "message": "No papers found"
         }, 200
 
-    # otherwise, process the data and save the artifact to GCS
-    j_string = json.dumps(papers_data)
-    _path = f"raw/arxiv"
-    gcs_path = upload_to_gcs(bucket_name, path=_path, run_id=run_id, data=j_string)
+    # append data to aggregated file in GCS
+    gcs_path = append_to_gcs(bucket_name, aggregated_file_path, papers_data)
 
     # return the metadata
     return {
-        "num_entries": len(papers_data),
+        "num_new_entries": gcs_path.get('new_entries'),
+        "total_entries": gcs_path.get('total_entries'),
         "run_id": run_id,
         "bucket_name": gcs_path.get('bucket_name'),
         "blob_name": gcs_path.get('blob_name')
