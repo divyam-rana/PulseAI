@@ -48,7 +48,7 @@ with DAG(
     dag_id="pulseai_main_transformation_pipeline",
     default_args=default_args,
     description="Transform raw data into fact and dimension tables in pulseai_main_db",
-    schedule="@daily",  # Run daily after raw data ingestion
+    schedule="0 1 * * *",  # Run daily after raw data ingestion @ 8 PM EST
     start_date=datetime(2025, 1, 1),
     catchup=False,
     tags=["pulseai", "transformation", "dimensional-model"],

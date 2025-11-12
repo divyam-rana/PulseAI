@@ -49,21 +49,34 @@ def task(request):
         
         ##################################################### Transform NEWS_ARTICLES fact
         
+        # FIXED: Handle duplicate URLs by keeping most recent version
         news_articles_query = f"""
         MERGE `{project_id}.{target_dataset}.news_articles` AS target
         USING (
             SELECT
-                a.title,
-                a.description,
-                a.content,
-                a.url,
-                a.image,
-                ns.source_sk,
-                a.published_at
-            FROM `{project_id}.{source_dataset}.articles` a
-            LEFT JOIN `{project_id}.{target_dataset}.news_sources` ns
-                ON a.source.name = ns.source_bk
-            WHERE a.url IS NOT NULL
+                title,
+                description,
+                content,
+                url,
+                image,
+                source_sk,
+                published_at
+            FROM (
+                SELECT
+                    a.title,
+                    a.description,
+                    a.content,
+                    a.url,
+                    a.image,
+                    ns.source_sk,
+                    a.published_at,
+                    ROW_NUMBER() OVER (PARTITION BY a.url ORDER BY a.ingest_timestamp DESC) AS rn
+                FROM `{project_id}.{source_dataset}.articles` a
+                LEFT JOIN `{project_id}.{target_dataset}.news_sources` ns
+                    ON a.source.name = ns.source_bk
+                WHERE a.url IS NOT NULL
+            )
+            WHERE rn = 1
         ) AS source
         ON target.url = source.url
         WHEN NOT MATCHED THEN
