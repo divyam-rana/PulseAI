@@ -49,8 +49,8 @@ with DAG(
     dag_id="arxiv_weekly_newsletter_v1_pipeline",
     default_args=default_args,
     description="Generate weekly AI research newsletter from arXiv papers (v1 - categorized)",
-    schedule="0 18 * * 5",  # Run at 6 PM UTC every Friday (1 PM EST)
-    start_date=datetime(2025, 1, 3),  # First Friday of 2025
+    schedule="0 7 * * 6",  # Run at 7 AM UTC every Saturday (2 AM EST)
+    start_date=datetime(2025, 1, 4),  # First Saturday of 2025
     catchup=False,
     tags=["arxiv", "newsletter", "pulseai", "genai", "v1"],
 ) as dag:
