@@ -1,5 +1,3 @@
-# dags/arxiv_newsletter_v2_dag.py
-
 from datetime import datetime, timedelta
 import requests
 from airflow import DAG
@@ -16,7 +14,7 @@ default_args = {
 
 def call_setup_newsletter_schema():
     """Setup the weekly_newsletters table"""
-    url = "https://us-central1-pulseai-team3-ba882-fall25.cloudfunctions.net/setup-newsletter-schema"
+    url = "https://us-central1-pulseai-team3-ba882-fall25.cloudfunctions.net/summarize-arxiv-weekly-v2-schema"
     response = requests.get(url)
     response.raise_for_status()
     print(f"Setup newsletter schema response: {response.status_code}")
