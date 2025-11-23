@@ -1,5 +1,3 @@
-# functions/summarize-arxiv-weekly/main.py
-
 import functions_framework
 from google.cloud import bigquery
 from langchain_google_vertexai import ChatVertexAI
@@ -8,7 +6,7 @@ from typing import TypedDict, List
 import json
 from datetime import datetime, timedelta
 
-# Configuration
+# settings
 project_id = 'pulseai-team3-ba882-fall25'
 dataset_id = 'pulseai_main_db'
 table_id = 'arxiv_papers'
@@ -166,6 +164,7 @@ def save_newsletter(state: NewsletterState, start_date: str, end_date: str) -> N
         'paper_count': len(state['papers']),
         'category_count': len(state['summaries']),
         'generated_at': datetime.utcnow().isoformat(),
+        'version': 'v1_categorized'
     }
     
     table_ref = f"{project_id}.{dataset_id}.weekly_newsletters"
@@ -254,6 +253,7 @@ def task(request):
             "category_count": len(final_state['summaries']),
             "start_date": start_date,
             "end_date": end_date,
+            "version": "v1_categorized",
             "status": "success"
         }, 200
         
@@ -265,11 +265,3 @@ def task(request):
             "error": str(e),
             "status": "failed"
         }, 500
-```
-
-**requirements.txt:**
-```
-functions-framework==3.*
-google-cloud-bigquery==3.*
-langchain-google-vertexai==1.*
-langgraph==0.2.*
