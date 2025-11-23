@@ -1,5 +1,3 @@
-# functions/summarize-arxiv-weekly-v2/main.py
-
 import functions_framework
 from google.cloud import bigquery
 from langchain_google_vertexai import ChatVertexAI
@@ -8,7 +6,7 @@ from typing import TypedDict, List
 import json
 from datetime import datetime, timedelta
 
-# Configuration
+# settings
 project_id = 'pulseai-team3-ba882-fall25'
 dataset_id = 'pulseai_main_db'
 table_id = 'arxiv_papers'
@@ -325,11 +323,3 @@ def task(request):
             "error": str(e),
             "status": "failed"
         }, 500
-```
-
-**requirements.txt:**
-```
-functions-framework==3.*
-google-cloud-bigquery==3.*
-langchain-google-vertexai==1.*
-langgraph==0.2.*
