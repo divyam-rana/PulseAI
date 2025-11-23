@@ -1,8 +1,7 @@
-# functions/setup-newsletter-schema/main.py
-
 import functions_framework
 from google.cloud import bigquery
 
+# settings
 project_id = 'pulseai-team3-ba882-fall25'
 dataset_id = 'pulseai_main_db'
 
