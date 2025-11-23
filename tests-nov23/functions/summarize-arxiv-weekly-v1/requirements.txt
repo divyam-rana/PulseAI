@@ -2,4 +2,4 @@ functions-framework==3.*
 google-cloud-bigquery==3.*
 langchain-google-vertexai==1.*
 langgraph==0.2.*
-langchain-core==0.3.*
+langchain-core<0.3,>=0.2.33
