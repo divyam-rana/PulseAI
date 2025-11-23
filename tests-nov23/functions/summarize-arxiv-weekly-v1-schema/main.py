@@ -1,8 +1,7 @@
-# functions/setup-newsletter-schema/main.py
-
 import functions_framework
 from google.cloud import bigquery
 
+# settings
 project_id = 'pulseai-team3-ba882-fall25'
 dataset_id = 'pulseai_main_db'
 
@@ -27,6 +26,8 @@ def task(request):
                            description="Number of categories"),
         bigquery.SchemaField("generated_at", "TIMESTAMP", mode="REQUIRED",
                            description="When newsletter was generated"),
+        bigquery.SchemaField("version", "STRING", mode="NULLABLE",
+                           description="Newsletter generation version"),
     ]
     
     table = bigquery.Table(table_id, schema=schema)
