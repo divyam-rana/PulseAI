@@ -1,0 +1,6 @@
+functions-framework>=3.0.0
+transformers>=4.35.0
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.5.0
+sentencepiece>=0.1.99
+google-cloud-storage>=2.10.0
