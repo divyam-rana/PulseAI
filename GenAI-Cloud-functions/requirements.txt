@@ -1,0 +1,3 @@
+# Libraries for BigQuery and Vertex AI
+google-cloud-bigquery
+google-cloud-aiplatform
