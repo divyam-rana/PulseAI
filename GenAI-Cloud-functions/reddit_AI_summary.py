@@ -34,7 +34,8 @@ def get_aggregated_daily_text(input_table: str, target_date: datetime.date) -> t
         {input_table}
       WHERE
         -- Efficiently filter using the partitioned column
-        _PARTITIONTIME = TIMESTAMP('{target_date_str}')
+        -- _PARTITIONTIME = TIMESTAMP('{target_date_str}')
+        TIMESTAMP_TRUNC(created_utc, DAY) = TIMESTAMP_TRUNC(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 DAY), DAY)
         AND selftext IS NOT NULL
         AND selftext != ''
     ) AS t
