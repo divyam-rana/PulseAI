@@ -6,9 +6,9 @@ from google.cloud import aiplatform
 # --- Configuration (Set as Environment Variables) ---
 # It's best practice to pass these configurations via environment variables.
 PROJECT_ID = 'pulseai-team3-ba882-fall25'
-INPUT_TABLE = os.environ.get("INPUT_TABLE", "`pulseai-team3-ba882-fall25.raw_reddit.posts`")
-OUTPUT_TABLE = os.environ.get("OUTPUT_TABLE", "`pulseai-team3-ba882-fall25.raw_reddit.daily_post_summaries`")
-REGION = os.environ.get("GCP_REGION", "us-central1") # Use the region where your Vertex AI is located
+INPUT_TABLE = "`pulseai-team3-ba882-fall25.raw_reddit.posts`"
+OUTPUT_TABLE = "`pulseai-team3-ba882-fall25.raw_reddit.daily_post_summaries`"
+REGION = "us-central1" # Use the region where your Vertex AI is located
 
 # Initialize BigQuery client globally for reuse
 BQ_CLIENT = bigquery.Client()
