@@ -1,0 +1,5 @@
+# Core Airflow package (usually managed by Astronomer)
+# apache-airflow
+
+# Google Cloud Provider for Airflow
+apache-airflow-providers-google
