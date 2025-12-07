@@ -1,2 +1,4 @@
 project:
-    name: pulse-ai-pipeline
+  name: pulseai
+cloud:
+  organization_id: ""

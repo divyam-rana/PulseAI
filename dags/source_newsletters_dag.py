@@ -15,7 +15,6 @@ from datetime import datetime, timedelta
 
 import pendulum
 from airflow import DAG
-from airflow.providers.google.common.hooks.base_google import GoogleBaseHook
 from airflow.decorators import task
 
 # ==============================================================================
@@ -72,24 +71,34 @@ def invoke_cloud_function(function_name: str, payload: dict = None):
     Invoke a Gen 2 Cloud Function (Cloud Run) using authenticated HTTP request.
     """
     import requests
-    from google.auth.transport.requests import Request
-    from google.oauth2 import id_token
+    import google.auth.transport.requests
+    from google.oauth2 import service_account
+    from airflow.hooks.base import BaseHook
+    import json
 
     function_url = FUNCTION_URLS[function_name]
     
-    # Get the identity token for authentication
-    hook = GoogleBaseHook(gcp_conn_id=GCP_CONN_ID)
-    credentials = hook.get_credentials()
+    # Get connection from Airflow
+    connection = BaseHook.get_connection(GCP_CONN_ID)
+    extras = connection.extra_dejson
     
-    # For Gen 2 functions, we need an identity token
-    auth_req = Request()
+    # Get the keyfile_dict from the connection
+    keyfile_dict = extras.get("keyfile_dict")
+    if isinstance(keyfile_dict, str):
+        keyfile_dict = json.loads(keyfile_dict)
+    
+    # Create credentials with the target audience for ID token
+    credentials = service_account.IDTokenCredentials.from_service_account_info(
+        keyfile_dict,
+        target_audience=function_url
+    )
+    
+    # Refresh to get the ID token
+    auth_req = google.auth.transport.requests.Request()
     credentials.refresh(auth_req)
     
-    # Get ID token for the target audience (the function URL)
-    token = id_token.fetch_id_token(auth_req, function_url)
-    
     headers = {
-        "Authorization": f"Bearer {token}",
+        "Authorization": f"Bearer {credentials.token}",
         "Content-Type": "application/json",
     }
     

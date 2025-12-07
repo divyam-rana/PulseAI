@@ -109,26 +109,58 @@ Papers:
 """.strip()
 
             response = model.generate_content(prompt)
-            raw = response.text
+            raw = response.text.strip()
+
+            # Remove markdown code blocks if present
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+                raw = raw.strip()
+            if raw.endswith("```"):
+                raw = raw[:-3].strip()
 
             try:
                 parsed = json.loads(raw)
-            except Exception:
-                parsed = {
-                    "high_level_summary": "",
-                    "detailed_summary": raw,
-                    "sources": fallback_sources,
-                }
+            except Exception as e:
+                return {"status": "parse_error", "error": str(e), "raw_response": raw}, 500
 
-            # Convert timestamps → ISO8601 strings
+            # Extract summaries and sources separately
+            high_level = parsed.get("high_level_summary", "")
+            detailed = parsed.get("detailed_summary", "")
+            sources = parsed.get("sources", fallback_sources)
+
+            # Convert detailed_summary to string if it's a list
+            if isinstance(detailed, list):
+                detailed = "\n".join(str(item) for item in detailed)
+
+            # Ensure sources is a list of dicts with paper_id and title
+            if not isinstance(sources, list):
+                sources = fallback_sources
+            else:
+                # Clean sources to only include paper_id and title
+                cleaned_sources = []
+                for s in sources:
+                    if isinstance(s, dict):
+                        cleaned_sources.append({
+                            "paper_id": s.get("paper_id", ""),
+                            "title": s.get("title", "")
+                        })
+                    elif isinstance(s, list) and len(s) >= 2:
+                        # Handle [paper_id, title] format
+                        cleaned_sources.append({
+                            "paper_id": s[0],
+                            "title": s[1]
+                        })
+                sources = cleaned_sources if cleaned_sources else fallback_sources
+
             out_rows.append({
                 "tag": tag,
                 "window_start": start_ts.isoformat(),
                 "window_end": end_ts.isoformat(),
-                "high_level_summary": parsed.get("high_level_summary", ""),
-                "detailed_summary": parsed.get("detailed_summary", ""),
-                "sources": parsed.get("sources", fallback_sources),
-                "created_at": datetime.now(timezone.utc).isoformat(),
+                "high_level_summary": str(high_level),
+                "detailed_summary": str(detailed),
+                "sources": sources,
             })
 
         # Insert summaries into BigQuery
