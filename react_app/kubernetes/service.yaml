@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pulseai-insights-service
+  labels:
+    app: pulseai-insights
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http-frontend
+  - port: 3001
+    targetPort: 3001
+    protocol: TCP
+    name: http-backend
+  selector:
+    app: pulseai-insights
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pulseai-insights-ingress
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: "pulseai-ip"
+    networking.gke.io/managed-certificates: "pulseai-cert"
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /api/*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: pulseai-insights-service
+            port:
+              number: 3001
+      - path: /*
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: pulseai-insights-service
+            port:
+              number: 80
