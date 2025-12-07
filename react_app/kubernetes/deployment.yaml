@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pulseai-insights
+  labels:
+    app: pulseai-insights
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pulseai-insights
+  template:
+    metadata:
+      labels:
+        app: pulseai-insights
+    spec:
+      containers:
+      - name: pulseai-app
+        image: gcr.io/YOUR_PROJECT_ID/pulseai-insights:latest
+        ports:
+        - containerPort: 8080
+          name: frontend
+        - containerPort: 3001
+          name: backend
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: GOOGLE_CLOUD_PROJECT
+          value: "YOUR_PROJECT_ID"
+        - name: BIGQUERY_DATASET
+          value: "pulseai_main_db"
+        - name: PORT
+          value: "3001"
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: "/secrets/service-account-key.json"
+        volumeMounts:
+        - name: gcp-credentials
+          mountPath: /secrets
+          readOnly: true
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3001
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      volumes:
+      - name: gcp-credentials
+        secret:
+          secretName: gcp-credentials

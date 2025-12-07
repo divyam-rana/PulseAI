@@ -1,0 +1,30 @@
+runtime: nodejs20
+instance_class: F2
+
+env_variables:
+  GOOGLE_CLOUD_PROJECT: "pulseai-team3-ba882-fall25"
+  BIGQUERY_DATASET: "pulseai_main_db"
+  PORT: "8080"
+  NODE_ENV: "production"
+
+automatic_scaling:
+  min_instances: 1
+  max_instances: 10
+  target_cpu_utilization: 0.65
+
+handlers:
+# API endpoints
+- url: /api/.*
+  script: auto
+  secure: always
+
+# Static files
+- url: /assets
+  static_dir: dist/assets
+  secure: always
+
+# Catch-all for SPA routing
+- url: /.*
+  static_files: dist/index.html
+  upload: dist/index.html
+  secure: always

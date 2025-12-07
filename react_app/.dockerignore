@@ -1,0 +1,15 @@
+node_modules
+backend/node_modules
+dist
+.git
+.gitignore
+.env
+backend/.env
+*.log
+.vscode
+.idea
+coverage
+.DS_Store
+*.md
+!README.md
+backend/service-account-key.json

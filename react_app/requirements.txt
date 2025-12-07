@@ -1,0 +1,24 @@
+# Node.js Requirements
+# This project uses Node.js v20.x or higher
+# All Node.js dependencies are managed via package.json files
+
+# Frontend Dependencies (see package.json):
+# - React 18.3.1
+# - Vite 5.4.19
+# - TailwindCSS 3.4.17
+# - shadcn/ui components
+# - React Router DOM 6.30.2
+# - Recharts 2.15.4
+# - @visx packages for visualizations
+
+# Backend Dependencies (see backend/package.json):
+# - Express 4.21.1
+# - @google-cloud/bigquery 7.9.0
+# - cors 2.8.5
+# - dotenv 16.4.5
+
+# System Requirements:
+# - Node.js >= 20.12.2
+# - npm >= 10.x
+# - Docker (optional, for containerized deployment)
+# - Google Cloud service account with BigQuery access
