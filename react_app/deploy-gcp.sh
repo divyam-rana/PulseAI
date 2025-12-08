@@ -31,11 +31,18 @@ gcloud services enable cloudbuild.googleapis.com
 gcloud services enable run.googleapis.com
 gcloud services enable containerregistry.googleapis.com
 
+# Verify service account key exists
+if [ ! -f "backend/service-account-key.json" ]; then
+    echo "❌ ERROR: backend/service-account-key.json not found!"
+    echo "   Please place your service account key file at: backend/service-account-key.json"
+    exit 1
+fi
+
 # Build and submit to Cloud Build
 echo "🏗️  Building container image..."
 gcloud builds submit --tag gcr.io/$PROJECT_ID/$SERVICE_NAME
 
-# Deploy to Cloud Run
+# Deploy to Cloud Run with service account key file
 echo "🚀 Deploying to Cloud Run..."
 gcloud run deploy $SERVICE_NAME \
   --image gcr.io/$PROJECT_ID/$SERVICE_NAME \
@@ -47,7 +54,7 @@ gcloud run deploy $SERVICE_NAME \
   --cpu 1 \
   --min-instances 0 \
   --max-instances 10 \
-  --set-env-vars GOOGLE_CLOUD_PROJECT=$PROJECT_ID,BIGQUERY_DATASET=pulseai_main_db,NODE_ENV=production
+  --set-env-vars GOOGLE_CLOUD_PROJECT=$PROJECT_ID,BIGQUERY_DATASET=pulseai_main_db,NODE_ENV=production,GOOGLE_APPLICATION_CREDENTIALS=/app/backend/service-account-key.json
 
 echo ""
 echo "✅ Deployment complete!"
