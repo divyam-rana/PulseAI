@@ -1,4 +1,4 @@
-import { Home, BarChart3, Search, Users, BookOpen } from "lucide-react";
+import { Home, BarChart3, Search, Users, BookOpen, Flame } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -28,14 +28,19 @@ const menuItems = [
     icon: Search,
   },
   {
-    title: "Team",
-    url: "/team",
-    icon: Users,
-  },
-  {
     title: "Analytics",
     url: "/analytics",
     icon: BarChart3,
+  },
+  {
+    title: "Trends",
+    url: "/trends",
+    icon: Flame,
+  },
+  {
+    title: "Team",
+    url: "/team",
+    icon: Users,
   },
 ];
 

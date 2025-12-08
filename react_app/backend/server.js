@@ -381,9 +381,21 @@ app.get('/api/arxiv-papers', async (req, res) => {
     
     const [rows] = await bigquery.query(query);
     
+    // Format timestamps for frontend
+    const formattedRows = rows.map(row => ({
+      paper_id: row.paper_id,
+      title: row.title,
+      abstract: row.abstract,
+      category_sk: row.category_sk,
+      published_at: row.published_at?.value || row.published_at,
+      updated_at: row.updated_at?.value || row.updated_at,
+      _loaded_at: row._loaded_at?.value || row._loaded_at,
+      tags: row.tags || []
+    }));
+    
     res.json({
-      papers: rows,
-      count: rows.length
+      papers: formattedRows,
+      count: formattedRows.length
     });
   } catch (error) {
     console.error('Error fetching arxiv papers:', error);
@@ -429,9 +441,23 @@ app.get('/api/news-articles', async (req, res) => {
     
     const [rows] = await bigquery.query(query);
     
+    // Format timestamps for frontend
+    const formattedRows = rows.map(row => ({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      content: row.content,
+      url: row.url,
+      image: row.image,
+      source_sk: row.source_sk,
+      published_at: row.published_at?.value || row.published_at,
+      _loaded_at: row._loaded_at?.value || row._loaded_at,
+      tags: row.tags || []
+    }));
+    
     res.json({
-      articles: rows,
-      count: rows.length
+      articles: formattedRows,
+      count: formattedRows.length
     });
   } catch (error) {
     console.error('Error fetching news articles:', error);
@@ -474,9 +500,20 @@ app.get('/api/reddit-posts', async (req, res) => {
     
     const [rows] = await bigquery.query(query);
     
+    // Format timestamps for frontend
+    const formattedRows = rows.map(row => ({
+      post_id: row.post_id,
+      title: row.title,
+      author_sk: row.author_sk,
+      date_sk: row.date_sk,
+      created_utc: row.created_utc?.value || row.created_utc,
+      _loaded_at: row._loaded_at?.value || row._loaded_at,
+      tags: row.tags || []
+    }));
+    
     res.json({
-      posts: rows,
-      count: rows.length
+      posts: formattedRows,
+      count: formattedRows.length
     });
   } catch (error) {
     console.error('Error fetching reddit posts:', error);

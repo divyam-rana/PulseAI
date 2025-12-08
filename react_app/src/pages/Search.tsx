@@ -15,6 +15,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format } from "date-fns";
 import { Newsletter } from "@/types/newsletter";
 import { TAG_COLORS } from "@/lib/tagColors";
+import { getApiUrl } from "@/lib/apiUrl";
+import { toast } from "sonner";
 
 interface ArxivPaper {
   paper_id: string;
@@ -94,8 +96,27 @@ export default function Search() {
     }
   };
 
-  const getTagColor = (tag: string) => {
-    return TAG_COLORS[tag as keyof typeof TAG_COLORS] || 'default';
+  const renderMarkdown = (content: string): string => {
+    if (!content) return '';
+    return content
+      .replace(/^### (.*$)/gim, '<h3 class="text-base font-semibold mt-3 mb-2">$1</h3>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-lg font-semibold mt-4 mb-2">$1</h2>')
+      .replace(/^# (.*$)/gim, '<h1 class="text-xl font-bold mt-4 mb-2">$1</h1>')
+      .replace(/\*\*(.*?)\*\*/gim, '<strong class="font-semibold">$1</strong>')
+      .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+      .replace(/`(.*?)`/gim, '<code class="bg-muted px-1 py-0.5 rounded text-xs">$1</code>')
+      .replace(/^- (.*$)/gim, '<li class="ml-4">$1</li>')
+      .replace(/\n\n/g, '</p><p class="mb-2">')
+      .replace(/\n/g, '<br />');
+  };
+
+  const getTagColor = (tag: string): "default" | "secondary" | "outline" | "destructive" => {
+    // Return a valid Badge variant based on tag
+    const tagKey = tag as keyof typeof TAG_COLORS;
+    if (TAG_COLORS[tagKey]) {
+      return 'default';
+    }
+    return 'outline';
   };
 
   useEffect(() => {
@@ -107,7 +128,7 @@ export default function Search() {
         if (selectedBrowseTag !== 'all') params.append('tag', selectedBrowseTag);
         if (browseSearchQuery) params.append('search', browseSearchQuery);
         
-        const response = await fetch(`http://localhost:3001/api/arxiv-papers?${params}`);
+        const response = await fetch(`${getApiUrl()}/api/arxiv-papers?${params}`);
         if (!response.ok) throw new Error('Failed to fetch papers');
         const data = await response.json();
         setPapers(data.papers || []);
@@ -130,7 +151,7 @@ export default function Search() {
         if (selectedBrowseTag !== 'all') params.append('tag', selectedBrowseTag);
         if (browseSearchQuery) params.append('search', browseSearchQuery);
         
-        const response = await fetch(`http://localhost:3001/api/news-articles?${params}`);
+        const response = await fetch(`${getApiUrl()}/api/news-articles?${params}`);
         if (!response.ok) throw new Error('Failed to fetch articles');
         const data = await response.json();
         setArticles(data.articles || []);
@@ -153,7 +174,7 @@ export default function Search() {
         if (selectedBrowseTag !== 'all') params.append('tag', selectedBrowseTag);
         if (browseSearchQuery) params.append('search', browseSearchQuery);
         
-        const response = await fetch(`http://localhost:3001/api/reddit-posts?${params}`);
+        const response = await fetch(`${getApiUrl()}/api/reddit-posts?${params}`);
         if (!response.ok) throw new Error('Failed to fetch posts');
         const data = await response.json();
         setPosts(data.posts || []);
@@ -168,7 +189,10 @@ export default function Search() {
   }, [selectedBrowseTag, browseSearchQuery]);
 
   const handleExportCSV = () => {
-    if (filteredResults.length === 0) return;
+    if (filteredResults.length === 0) {
+      toast.error('No results to export');
+      return;
+    }
     
     const headers = ['Tag', 'Window Start', 'Window End', 'Content', 'Created At'];
     const csvData = filteredResults.map((n: Newsletter) => [
@@ -186,10 +210,14 @@ export default function Search() {
     a.href = url;
     a.download = `pulseai-search-${Date.now()}.csv`;
     a.click();
+    toast.success(`Exported ${filteredResults.length} results to CSV`);
   };
 
   const handleExportJSON = () => {
-    if (filteredResults.length === 0) return;
+    if (filteredResults.length === 0) {
+      toast.error('No results to export');
+      return;
+    }
     
     const json = JSON.stringify(filteredResults, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
@@ -198,6 +226,7 @@ export default function Search() {
     a.href = url;
     a.download = `pulseai-search-${Date.now()}.json`;
     a.click();
+    toast.success(`Exported ${filteredResults.length} results to JSON`);
   };
 
   const toggleTag = (tag: string) => {
@@ -216,11 +245,16 @@ export default function Search() {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-8"
         >
-          <div>
-            <h1 className="font-display text-4xl font-bold mb-4 text-gradient">
-              🔍 Universal Search
-            </h1>
-            <p className="text-muted-foreground text-lg">
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <SearchIcon className="h-6 w-6 text-primary" />
+              </div>
+              <h1 className="font-display text-4xl font-bold text-gradient">
+                Universal Search
+              </h1>
+            </div>
+            <p className="text-muted-foreground text-lg ml-14">
               Search newsletters, research papers, news articles, and community discussions
             </p>
           </div>
@@ -234,10 +268,13 @@ export default function Search() {
             </TabsList>
 
             <TabsContent value="newsletters" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Newsletter Search</CardTitle>
-                  <CardDescription>Search and filter across all newsletter content</CardDescription>
+              <Card className="border-2">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2">
+                    <FilterIcon className="h-5 w-5 text-primary" />
+                    Newsletter Search
+                  </CardTitle>
+                  <CardDescription className="mt-1">Search and filter across all newsletter content</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="relative">
@@ -309,19 +346,39 @@ export default function Search() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Search Results</CardTitle>
-                  <CardDescription>
-                    {isLoading ? 'Searching...' : `Found ${filteredResults.length} newsletter(s)`}
-                  </CardDescription>
+              <Card className="border-2">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Newspaper className="h-5 w-5 text-primary" />
+                        Search Results
+                      </CardTitle>
+                      <CardDescription className="mt-1">
+                        {isLoading ? 'Searching...' : `Found ${filteredResults.length} newsletter${filteredResults.length !== 1 ? 's' : ''}`}
+                      </CardDescription>
+                    </div>
+                    {!isLoading && filteredResults.length > 0 && (
+                      <Badge variant="outline" className="text-sm">
+                        {filteredResults.length} result{filteredResults.length !== 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {isLoading && (
                     <div className="space-y-4">
-                      <Skeleton className="h-20 w-full" />
-                      <Skeleton className="h-20 w-full" />
-                      <Skeleton className="h-20 w-full" />
+                      {[1, 2, 3].map((i) => (
+                        <Card key={i} className="border-2">
+                          <CardHeader>
+                            <Skeleton className="h-5 w-32 mb-2" />
+                            <Skeleton className="h-4 w-24" />
+                          </CardHeader>
+                          <CardContent>
+                            <Skeleton className="h-16 w-full" />
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
                   )}
 
@@ -332,9 +389,23 @@ export default function Search() {
                   )}
 
                   {!isLoading && !error && filteredResults.length === 0 && (
-                    <div className="text-center py-12">
-                      <SearchIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground">No results found. Try adjusting your filters.</p>
+                    <div className="text-center py-16">
+                      <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-muted mb-4">
+                        <SearchIcon className="h-10 w-10 text-muted-foreground" />
+                      </div>
+                      <h3 className="text-lg font-semibold mb-2">No results found</h3>
+                      <p className="text-muted-foreground mb-4">Try adjusting your search query or filters</p>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => {
+                          setSearchQuery("");
+                          setSelectedTags([]);
+                          setStartDate("");
+                          setEndDate("");
+                        }}
+                      >
+                        Clear All Filters
+                      </Button>
                     </div>
                   )}
 
@@ -346,17 +417,53 @@ export default function Search() {
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: index * 0.05 }}
-                          className="p-4 rounded-lg border border-border hover:bg-muted/50 transition-colors"
+                          className="group"
                         >
-                          <div className="flex items-start justify-between mb-2">
-                            <Badge variant="outline">{newsletter.tag}</Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(newsletter.window_end), 'MMM dd, yyyy')}
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground line-clamp-3">
-                            {newsletter.content?.substring(0, 300)}...
-                          </p>
+                          <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/50 cursor-pointer">
+                            <CardHeader className="pb-3">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Badge 
+                                      variant="outline" 
+                                      className="font-semibold"
+                                    >
+                                      {newsletter.tag}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                      <Calendar className="h-3 w-3" />
+                                      {format(new Date(newsletter.window_end), 'MMM dd, yyyy')}
+                                    </span>
+                                  </div>
+                                  <CardTitle className="text-lg mb-2 group-hover:text-primary transition-colors">
+                                    {newsletter.tag} Newsletter
+                                  </CardTitle>
+                                </div>
+                              </div>
+                            </CardHeader>
+                            <CardContent>
+                              <div 
+                                className="text-sm text-muted-foreground leading-relaxed line-clamp-4 mb-4 prose prose-sm max-w-none"
+                                dangerouslySetInnerHTML={{
+                                  __html: renderMarkdown(newsletter.content?.substring(0, 400) || 'No content available') + 
+                                    (newsletter.content && newsletter.content.length > 400 ? '...' : '')
+                                }}
+                              />
+                              <div className="flex items-center justify-between pt-3 border-t border-border/50">
+                                <div className="text-xs text-muted-foreground">
+                                  {newsletter.content ? `${Math.ceil(newsletter.content.length / 200)} min read` : 'No content'}
+                                </div>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  View Details
+                                  <ExternalLink className="h-3 w-3 ml-1" />
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
                         </motion.div>
                       ))}
                     </div>
@@ -366,10 +473,13 @@ export default function Search() {
             </TabsContent>
 
             <TabsContent value="papers" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Arxiv Research Papers</CardTitle>
-                  <CardDescription>Browse and search tagged research papers from arXiv</CardDescription>
+              <Card className="border-2">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2">
+                    <BookOpen className="h-5 w-5 text-primary" />
+                    Arxiv Research Papers
+                  </CardTitle>
+                  <CardDescription className="mt-1">Browse and search tagged research papers from arXiv</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex flex-col md:flex-row gap-4">
@@ -484,10 +594,13 @@ export default function Search() {
             </TabsContent>
 
             <TabsContent value="news" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>News Articles</CardTitle>
-                  <CardDescription>Browse and search tagged news articles</CardDescription>
+              <Card className="border-2">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2">
+                    <Newspaper className="h-5 w-5 text-primary" />
+                    News Articles
+                  </CardTitle>
+                  <CardDescription className="mt-1">Browse and search tagged news articles</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex flex-col md:flex-row gap-4">
@@ -600,10 +713,13 @@ export default function Search() {
             </TabsContent>
 
             <TabsContent value="reddit" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Reddit Discussions</CardTitle>
-                  <CardDescription>Browse and search tagged Reddit posts</CardDescription>
+              <Card className="border-2">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-primary" />
+                    Reddit Discussions
+                  </CardTitle>
+                  <CardDescription className="mt-1">Browse and search tagged Reddit posts</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="flex flex-col md:flex-row gap-4">

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Calendar, Clock, Tag, Share2, Bookmark, ExternalLink, Copy, Check } from "lucide-react";
+import { X, Calendar, Clock, Tag, Share2, Bookmark, Copy, Check } from "lucide-react";
 import { Newsletter } from "@/types/newsletter";
 import { TagBadge } from "./TagBadge";
 import { Button } from "@/components/ui/button";
@@ -53,18 +53,38 @@ export function NewsletterModal({ newsletter, isOpen, onClose }: NewsletterModal
   };
 
   const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/newsletters?tag=${encodeURIComponent(newsletter.tag)}&date=${encodeURIComponent(newsletter.window_end)}`;
+    const shareText = `Check out the ${newsletter.tag} Weekly Digest from PulseAI!`;
+    
     if (navigator.share) {
       try {
         await navigator.share({
           title: `PulseAI - ${newsletter.tag} Weekly Digest`,
-          text: newsletter.content?.slice(0, 200) || "",
-          url: window.location.href,
+          text: shareText,
+          url: shareUrl,
+        });
+        toast({
+          title: "Shared successfully",
+          description: "The newsletter has been shared.",
         });
       } catch (err) {
-        console.log("Share cancelled");
+        // User cancelled or error occurred
+        if ((err as Error).name !== 'AbortError') {
+          // If not cancelled, fallback to copy
+          navigator.clipboard.writeText(shareUrl);
+          toast({
+            title: "Link copied to clipboard",
+            description: "The newsletter link has been copied.",
+          });
+        }
       }
     } else {
-      handleCopy();
+      // Fallback: copy link to clipboard
+      navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "Link copied to clipboard",
+        description: "The newsletter link has been copied.",
+      });
     }
   };
 
@@ -170,8 +190,8 @@ export function NewsletterModal({ newsletter, isOpen, onClose }: NewsletterModal
                 <p className="text-sm text-muted-foreground">
                   Published on {format(new Date(newsletter.created_at), "MMMM d, yyyy 'at' h:mm a")}
                 </p>
-                <Button variant="hero" size="sm" className="gap-2">
-                  <ExternalLink className="w-4 h-4" />
+                <Button variant="hero" size="sm" className="gap-2" onClick={handleShare}>
+                  <Share2 className="w-4 h-4" />
                   Share Newsletter
                 </Button>
               </div>

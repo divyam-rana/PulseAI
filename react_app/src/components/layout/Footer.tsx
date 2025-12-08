@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
-import { Sparkles, Github, Twitter, Linkedin, Mail, Heart } from "lucide-react";
+import { Sparkles, Github, Twitter, Linkedin, Mail, Heart, Rss, Search, BarChart3, Flame, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Link } from "react-router-dom";
 
 export function Footer() {
   return (
@@ -39,39 +40,94 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* Pages */}
           <div>
-            <h4 className="font-display font-semibold mb-4">Quick Links</h4>
+            <h4 className="font-display font-semibold mb-4">Pages</h4>
             <ul className="space-y-3">
-              {["Latest Issues", "Archive", "Categories", "About Us", "Contact"].map((link) => (
-                <li key={link}>
-                  <a
-                    href="#"
-                    className="text-muted-foreground hover:text-foreground transition-colors text-sm"
-                  >
-                    {link}
-                  </a>
-                </li>
-              ))}
+              <li>
+                <Link
+                  to="/newsletters"
+                  className="text-muted-foreground hover:text-foreground transition-colors text-sm flex items-center gap-2"
+                >
+                  <Rss className="w-4 h-4" />
+                  Newsletters
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/search"
+                  className="text-muted-foreground hover:text-foreground transition-colors text-sm flex items-center gap-2"
+                >
+                  <Search className="w-4 h-4" />
+                  Search
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/analytics"
+                  className="text-muted-foreground hover:text-foreground transition-colors text-sm flex items-center gap-2"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  Analytics
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/trends"
+                  className="text-muted-foreground hover:text-foreground transition-colors text-sm flex items-center gap-2"
+                >
+                  <Flame className="w-4 h-4" />
+                  Trends
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/team"
+                  className="text-muted-foreground hover:text-foreground transition-colors text-sm flex items-center gap-2"
+                >
+                  <Users className="w-4 h-4" />
+                  Team
+                </Link>
+              </li>
             </ul>
           </div>
 
-          {/* Categories */}
+          {/* Resources */}
           <div>
-            <h4 className="font-display font-semibold mb-4">Categories</h4>
+            <h4 className="font-display font-semibold mb-4">Resources</h4>
             <ul className="space-y-3">
-              {["AI", "Machine Learning", "Deep Learning", "NLP", "Computer Vision", "Robotics"].map(
-                (category) => (
-                  <li key={category}>
-                    <a
-                      href="#"
-                      className="text-muted-foreground hover:text-foreground transition-colors text-sm"
-                    >
-                      {category}
-                    </a>
-                  </li>
-                )
-              )}
+              <li>
+                <Link
+                  to="/"
+                  className="text-muted-foreground hover:text-foreground transition-colors text-sm"
+                >
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/coming-soon"
+                  className="text-muted-foreground hover:text-foreground transition-colors text-sm"
+                >
+                  Subscribe
+                </Link>
+              </li>
+              <li>
+                <a
+                  href="#"
+                  className="text-muted-foreground hover:text-foreground transition-colors text-sm"
+                >
+                  Privacy Policy
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#"
+                  className="text-muted-foreground hover:text-foreground transition-colors text-sm"
+                >
+                  Terms of Service
+                </a>
+              </li>
             </ul>
           </div>
 
@@ -97,19 +153,11 @@ export function Footer() {
         {/* Bottom */}
         <div className="mt-12 pt-8 border-t border-border/50 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} PulseAI. All rights reserved.
+            © {new Date().getFullYear()} PulseAI. All rights reserved. Created by Divyam Rana.
           </p>
           <p className="text-sm text-muted-foreground flex items-center gap-1">
             Made with <Heart className="w-4 h-4 text-rose-500" /> for the AI community
           </p>
-          <div className="flex items-center gap-6">
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Privacy Policy
-            </a>
-            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Terms of Service
-            </a>
-          </div>
         </div>
       </div>
     </footer>

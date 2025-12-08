@@ -4,6 +4,7 @@ import { Newsletter } from "@/types/newsletter";
 import { TagBadge } from "./TagBadge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface NewsletterCardProps {
   newsletter: Newsletter;
@@ -36,24 +37,31 @@ export function NewsletterCard({ newsletter, index, onClick }: NewsletterCardPro
   const readingTime = calculateReadingTime(newsletter.content);
   const excerpt = getExcerpt(newsletter.content);
 
-  const handleShare = (e: React.MouseEvent) => {
+  const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const shareText = `Check out this ${newsletter.tag} newsletter from PulseAI!`;
-    const shareUrl = window.location.origin;
+    const shareUrl = `${window.location.origin}/newsletters?tag=${encodeURIComponent(newsletter.tag)}&date=${encodeURIComponent(newsletter.window_end)}`;
+    const shareText = `Check out the ${newsletter.tag} Weekly Digest from PulseAI!`;
     
     if (navigator.share) {
-      navigator.share({
-        title: `${newsletter.tag} Weekly Digest`,
-        text: shareText,
-        url: shareUrl
-      }).catch(() => {
-        // Fallback to clipboard
-        navigator.clipboard.writeText(shareUrl);
-        alert('Link copied to clipboard!');
-      });
+      try {
+        await navigator.share({
+          title: `${newsletter.tag} Weekly Digest`,
+          text: shareText,
+          url: shareUrl
+        });
+        toast.success("Newsletter shared successfully!");
+      } catch (err) {
+        // User cancelled or error occurred
+        if ((err as Error).name !== 'AbortError') {
+          // If not cancelled, fallback to clipboard
+          navigator.clipboard.writeText(shareUrl);
+          toast.success("Link copied to clipboard!");
+        }
+      }
     } else {
+      // Fallback: copy link to clipboard
       navigator.clipboard.writeText(shareUrl);
-      alert('Link copied to clipboard!');
+      toast.success("Link copied to clipboard!");
     }
   };
 
