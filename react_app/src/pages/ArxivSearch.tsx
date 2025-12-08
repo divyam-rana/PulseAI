@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format } from "date-fns";
+import { getApiUrl } from "@/lib/apiUrl";
 
 interface ArxivResult {
   title: string;
@@ -37,7 +38,7 @@ export default function ArxivSearch() {
     setHasSearched(true);
 
     try {
-      const response = await fetch('http://localhost:3001/api/semantic-search', {
+      const response = await fetch(`${getApiUrl()}/api/semantic-search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

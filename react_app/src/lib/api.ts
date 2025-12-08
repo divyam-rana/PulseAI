@@ -1,10 +1,10 @@
 // API client for backend communication
 import { Newsletter } from '@/types/newsletter';
+import { getApiUrl } from './apiUrl';
 
 // In production, API is served from the same origin
 // In development, API runs on a different port
-const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.PROD ? '' : 'http://localhost:3001');
+const API_BASE_URL = getApiUrl();
 
 export interface QueryParams {
   tableName: string;

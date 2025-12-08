@@ -7,14 +7,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from "recharts";
-import { TrendingUp, Users, Calendar, Tag, Share2, Download, RefreshCw, BookOpen, Newspaper, MessageSquare, Cloud } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, Legend } from "recharts";
+import { TrendingUp, TrendingDown, Users, Calendar, Tag, Share2, Download, RefreshCw, BookOpen, Newspaper, MessageSquare, Activity, BarChart3, PieChart as PieChartIcon, Sparkles, Clock, Filter as FilterIcon } from "lucide-react";
 import { format, subDays } from "date-fns";
-import { Wordcloud } from '@visx/wordcloud';
-import { scaleLog } from '@visx/scale';
-import { Text } from '@visx/text';
+import { getApiUrl } from '@/lib/apiUrl';
+import { toast } from "sonner";
 
 const COLORS = ['#0EA5E9', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B', '#EF4444', '#6366F1', '#14B8A6', '#F97316'];
 
@@ -58,7 +58,7 @@ export default function Analytics() {
     const fetchBrowseAnalytics = async () => {
       setBrowseLoading(true);
       try {
-        const response = await fetch('http://localhost:3001/api/browse-analytics');
+        const response = await fetch(`${getApiUrl()}/api/browse-analytics`);
         if (!response.ok) throw new Error('Failed to fetch browse analytics');
         const data = await response.json();
         setBrowseAnalytics(data);
@@ -105,6 +105,35 @@ export default function Analytics() {
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(-30); // Last 30 data points
 
+  // Calculate growth metrics
+  const previousPeriodStart = subDays(new Date(), parseInt(dateRange) * 2);
+  const previousPeriodEnd = subDays(new Date(), parseInt(dateRange));
+  const previousPeriodNewsletters = newsletters.filter(n => {
+    const date = new Date(n.window_end);
+    return date >= previousPeriodStart && date < previousPeriodEnd;
+  });
+  
+  const currentCount = filteredNewsletters.length;
+  const previousCount = previousPeriodNewsletters.length;
+  const growthRate = previousCount > 0 
+    ? ((currentCount - previousCount) / previousCount) * 100 
+    : 0;
+
+  // Calculate average newsletters per week
+  const weeksInRange = parseInt(dateRange) / 7;
+  const avgPerWeek = weeksInRange > 0 ? (currentCount / weeksInRange).toFixed(1) : '0';
+
+  // Top performing tags
+  const topTags = tagDistributionData.slice(0, 5);
+
+  // Calculate content statistics
+  const totalContentLength = filteredNewsletters.reduce((sum, n) => 
+    sum + (n.content?.length || 0), 0
+  );
+  const avgContentLength = filteredNewsletters.length > 0 
+    ? Math.round(totalContentLength / filteredNewsletters.length) 
+    : 0;
+
   // Calculate metrics from filtered data
   const filteredEarliestDate = filteredNewsletters.length > 0 
     ? filteredNewsletters.reduce((earliest, n) => 
@@ -118,32 +147,19 @@ export default function Analytics() {
       , filteredNewsletters[0].window_end)
     : null;
 
-  // Prepare word cloud data from all tags across newsletters and browse content
-  const wordCloudData = [
-    ...tagDistributionData.map(({ tag, count }) => ({ text: tag, value: count })),
-    ...(browseAnalytics?.papers.tag_distribution.map(({ tag, count }) => ({ text: tag, value: count })) || []),
-    ...(browseAnalytics?.articles.tag_distribution.map(({ tag, count }) => ({ text: tag, value: count })) || []),
-    ...(browseAnalytics?.posts.tag_distribution.map(({ tag, count }) => ({ text: tag, value: count })) || [])
-  ].reduce((acc: Array<{text: string; value: number}>, item) => {
-    const existing = acc.find(i => i.text === item.text);
-    if (existing) {
-      existing.value += item.value;
-    } else {
-      acc.push({ text: item.text, value: item.value });
-    }
-    return acc;
-  }, []).sort((a, b) => b.value - a.value).slice(0, 50);
-
   const handleShare = () => {
     if (navigator.share) {
       navigator.share({
         title: 'PulseAI Analytics Dashboard',
         text: `Check out these insights: ${stats?.total_newsletters} newsletters across ${stats?.total_tags} categories!`,
         url: window.location.href
+      }).catch(() => {
+        navigator.clipboard.writeText(window.location.href);
+        toast.success('Link copied to clipboard!');
       });
     } else {
       navigator.clipboard.writeText(window.location.href);
-      alert('Link copied to clipboard!');
+      toast.success('Link copied to clipboard!');
     }
   };
 
@@ -159,6 +175,7 @@ export default function Analytics() {
     a.href = url;
     a.download = `pulseai-analytics-${Date.now()}.json`;
     a.click();
+    toast.success('Analytics data exported successfully!');
   };
 
   if (statsLoading) {
@@ -202,17 +219,25 @@ export default function Analytics() {
           className="space-y-8"
         >
           {/* Page Header with Actions */}
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-2">
             <div>
-              <h1 className="font-display text-4xl font-bold mb-2 text-gradient">
-                📊 Analytics Dashboard
-              </h1>
-              <p className="text-muted-foreground text-lg">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <BarChart3 className="h-6 w-6 text-primary" />
+                </div>
+                <h1 className="font-display text-4xl font-bold text-gradient">
+                  Analytics Dashboard
+                </h1>
+              </div>
+              <p className="text-muted-foreground text-lg ml-14">
                 Real-time insights and visualizations from your newsletter content
               </p>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => {
+                refetch();
+                toast.info('Refreshing analytics data...');
+              }} className="gap-2">
                 <RefreshCw className="h-4 w-4" />
                 Refresh
               </Button>
@@ -228,10 +253,13 @@ export default function Analytics() {
           </div>
 
           {/* Filter Controls */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Filters</CardTitle>
-              <CardDescription>Customize your analytics view</CardDescription>
+          <Card className="border-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2">
+                <FilterIcon className="h-5 w-5 text-primary" />
+                Filters
+              </CardTitle>
+              <CardDescription className="mt-1">Customize your analytics view</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-4">
               <div className="space-y-2 flex-1 min-w-[200px]">
@@ -268,7 +296,10 @@ export default function Analytics() {
 
               <div className="space-y-2 flex-1 min-w-[200px]">
                 <label className="text-sm font-medium">Chart Type</label>
-                <Select value={chartType} onValueChange={setChartType}>
+                <Select value={chartType} onValueChange={(value) => {
+                  setChartType(value);
+                  toast.info(`Switched to ${value === 'bar' ? 'Bar' : value === 'line' ? 'Line' : 'Area'} chart`);
+                }}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -283,24 +314,31 @@ export default function Analytics() {
           </Card>
 
           {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <Card className="relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
                   <CardTitle className="text-sm font-medium">Total Newsletters</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Newspaper className="h-4 w-4 text-primary" />
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-gradient">
+                <CardContent className="relative">
+                  <div className="text-3xl font-bold text-gradient mb-1">
                     {filteredNewsletters.length.toLocaleString()}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground">
                     {selectedTag !== "all" ? `In ${selectedTag}` : "Across all categories"}
                   </p>
+                  <div className="flex items-center gap-1 mt-2 text-xs text-green-600 dark:text-green-400">
+                    <TrendingUp className="h-3 w-3" />
+                    <span>Active</span>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -310,18 +348,25 @@ export default function Analytics() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <Card className="relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full -mr-16 -mt-16" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
                   <CardTitle className="text-sm font-medium">Categories</CardTitle>
-                  <Tag className="h-4 w-4 text-muted-foreground" />
+                  <div className="p-2 rounded-lg bg-purple-500/10">
+                    <Tag className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold text-gradient">
+                <CardContent className="relative">
+                  <div className="text-3xl font-bold text-gradient mb-1">
                     {Object.keys(filteredTagDistribution).length}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {dateRange} days
+                  <p className="text-xs text-muted-foreground">
+                    Unique categories
                   </p>
+                  <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                    <Activity className="h-3 w-3" />
+                    <span>Last {dateRange} days</span>
+                  </div>
                 </CardContent>
               </Card>
             </motion.div>
@@ -331,18 +376,27 @@ export default function Analytics() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <Card className="relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
                   <CardTitle className="text-sm font-medium">Latest</CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {filteredLatestDate ? format(new Date(filteredLatestDate), 'MMM d, yyyy') : 'N/A'}
+                  <div className="p-2 rounded-lg bg-blue-500/10">
+                    <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
+                </CardHeader>
+                <CardContent className="relative">
+                  <div className="text-2xl font-bold mb-1">
+                    {filteredLatestDate ? format(new Date(filteredLatestDate), 'MMM d') : 'N/A'}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
                     Most recent newsletter
                   </p>
+                  {filteredLatestDate && (
+                    <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      <span>{format(new Date(filteredLatestDate), 'yyyy')}</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
@@ -352,22 +406,152 @@ export default function Analytics() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <Card className="relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -mr-16 -mt-16" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
                   <CardTitle className="text-sm font-medium">Earliest</CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {filteredEarliestDate ? format(new Date(filteredEarliestDate), 'MMM d, yyyy') : 'N/A'}
+                  <div className="p-2 rounded-lg bg-orange-500/10">
+                    <Calendar className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
+                </CardHeader>
+                <CardContent className="relative">
+                  <div className="text-2xl font-bold mb-1">
+                    {filteredEarliestDate ? format(new Date(filteredEarliestDate), 'MMM d') : 'N/A'}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
                     Oldest in range
+                  </p>
+                  {filteredEarliestDate && (
+                    <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      <span>{format(new Date(filteredEarliestDate), 'yyyy')}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+
+          {/* Additional Metrics Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <Card className="relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/5 rounded-full -mr-16 -mt-16" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                  <CardTitle className="text-sm font-medium">Growth Rate</CardTitle>
+                  <div className="p-2 rounded-lg bg-green-500/10">
+                    {growthRate >= 0 ? (
+                      <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4 text-red-600 dark:text-red-400" />
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="relative">
+                  <div className={`text-3xl font-bold mb-1 ${growthRate >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    {growthRate >= 0 ? '+' : ''}{growthRate.toFixed(1)}%
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    vs previous {dateRange} days
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <Card className="relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full -mr-16 -mt-16" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                  <CardTitle className="text-sm font-medium">Avg per Week</CardTitle>
+                  <div className="p-2 rounded-lg bg-blue-500/10">
+                    <Activity className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </CardHeader>
+                <CardContent className="relative">
+                  <div className="text-3xl font-bold text-gradient mb-1">
+                    {avgPerWeek}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Newsletters per week
+                  </p>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              <Card className="relative overflow-hidden border-2 hover:border-primary/50 transition-colors">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-full -mr-16 -mt-16" />
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                  <CardTitle className="text-sm font-medium">Avg Content Length</CardTitle>
+                  <div className="p-2 rounded-lg bg-purple-500/10">
+                    <BookOpen className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                </CardHeader>
+                <CardContent className="relative">
+                  <div className="text-3xl font-bold text-gradient mb-1">
+                    {avgContentLength.toLocaleString()}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Characters per newsletter
                   </p>
                 </CardContent>
               </Card>
             </motion.div>
           </div>
+
+          {/* Top Performing Tags */}
+          {topTags.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+              className="mb-6"
+            >
+              <Card className="border-2">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2">
+                    <Tag className="h-5 w-5 text-primary" />
+                    Top Performing Categories
+                  </CardTitle>
+                  <CardDescription className="mt-1">Most active categories in the selected period</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    {topTags.map((item, index) => (
+                      <div key={item.tag} className="text-center p-4 rounded-lg bg-muted/50 border border-border/50">
+                        <div className="text-2xl font-bold text-gradient mb-1">{item.count}</div>
+                        <div className="text-sm font-medium mb-2">{item.tag}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {((item.count / currentCount) * 100).toFixed(1)}% of total
+                        </div>
+                        <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full rounded-full transition-all"
+                            style={{ 
+                              width: `${(item.count / currentCount) * 100}%`,
+                              backgroundColor: COLORS[index % COLORS.length]
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
 
           {/* Charts Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -377,26 +561,123 @@ export default function Analytics() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
             >
-              <Card>
-                <CardHeader>
-                  <CardTitle>Tag Distribution</CardTitle>
-                  <CardDescription>Newsletter count by category</CardDescription>
+              <Card className="border-2 hover:border-primary/50 transition-colors">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5 text-primary" />
+                        Tag Distribution
+                      </CardTitle>
+                      <CardDescription className="mt-1">Newsletter count by category</CardDescription>
+                    </div>
+                    {chartType === "bar" && (
+                      <Badge variant="outline" className="ml-auto">Bar Chart</Badge>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={350}>
-                    <BarChart data={tagDistributionData}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis dataKey="tag" className="text-xs" angle={-45} textAnchor="end" height={100} />
-                      <YAxis className="text-xs" />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))', 
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
-                        }} 
-                      />
-                      <Bar dataKey="count" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
-                    </BarChart>
+                    {chartType === "bar" ? (
+                      <BarChart data={tagDistributionData}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis 
+                          dataKey="tag" 
+                          className="text-xs" 
+                          angle={-45} 
+                          textAnchor="end" 
+                          height={100}
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <YAxis 
+                          className="text-xs"
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--card))', 
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                          }} 
+                        />
+                        <Bar 
+                          dataKey="count" 
+                          fill="hsl(var(--primary))" 
+                          radius={[8, 8, 0, 0]}
+                          className="hover:opacity-80 transition-opacity"
+                        />
+                      </BarChart>
+                    ) : chartType === "area" ? (
+                      <AreaChart data={tagDistributionData}>
+                        <defs>
+                          <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis 
+                          dataKey="tag" 
+                          className="text-xs" 
+                          angle={-45} 
+                          textAnchor="end" 
+                          height={100}
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <YAxis 
+                          className="text-xs"
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--card))', 
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                          }} 
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="count" 
+                          stroke="hsl(var(--primary))" 
+                          fillOpacity={1} 
+                          fill="url(#colorCount)"
+                        />
+                      </AreaChart>
+                    ) : (
+                      <LineChart data={tagDistributionData}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis 
+                          dataKey="tag" 
+                          className="text-xs" 
+                          angle={-45} 
+                          textAnchor="end" 
+                          height={100}
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <YAxis 
+                          className="text-xs"
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--card))', 
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                          }} 
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="count" 
+                          stroke="hsl(var(--primary))" 
+                          strokeWidth={2}
+                          dot={{ fill: 'hsl(var(--primary))', r: 4 }}
+                          activeDot={{ r: 6 }}
+                        />
+                      </LineChart>
+                    )}
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
@@ -408,10 +689,18 @@ export default function Analytics() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
             >
-              <Card>
-                <CardHeader>
-                  <CardTitle>Category Breakdown</CardTitle>
-                  <CardDescription>Percentage distribution</CardDescription>
+              <Card className="border-2 hover:border-primary/50 transition-colors">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <PieChartIcon className="h-5 w-5 text-primary" />
+                        Category Breakdown
+                      </CardTitle>
+                      <CardDescription className="mt-1">Percentage distribution</CardDescription>
+                    </div>
+                    <Badge variant="outline">Pie Chart</Badge>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={350}>
@@ -421,10 +710,12 @@ export default function Analytics() {
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ tag, percent }) => `${tag}: ${(percent * 100).toFixed(0)}%`}
-                        outerRadius={100}
+                        label={({ tag, percent }) => percent > 0.05 ? `${tag}: ${(percent * 100).toFixed(0)}%` : ''}
+                        outerRadius={110}
                         fill="#8884d8"
                         dataKey="count"
+                        animationBegin={0}
+                        animationDuration={800}
                       >
                         {pieChartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -434,8 +725,14 @@ export default function Analytics() {
                         contentStyle={{ 
                           backgroundColor: 'hsl(var(--card))', 
                           border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                         }} 
+                      />
+                      <Legend 
+                        verticalAlign="bottom" 
+                        height={36}
+                        formatter={(value) => <span className="text-xs">{value}</span>}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -450,89 +747,91 @@ export default function Analytics() {
               transition={{ delay: 0.7 }}
               className="lg:col-span-2"
             >
-              <Card>
-                <CardHeader>
-                  <CardTitle>Newsletter Timeline</CardTitle>
-                  <CardDescription>Publishing activity over time (last 30 days)</CardDescription>
+              <Card className="border-2 hover:border-primary/50 transition-colors">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Activity className="h-5 w-5 text-primary" />
+                        Newsletter Timeline
+                      </CardTitle>
+                      <CardDescription className="mt-1">Publishing activity over time</CardDescription>
+                    </div>
+                    <Badge variant="outline">Line Chart</Badge>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={350}>
-                    <LineChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                      <XAxis dataKey="date" className="text-xs" />
-                      <YAxis className="text-xs" />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))', 
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px'
-                        }} 
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="count" 
-                        stroke="hsl(var(--primary))" 
-                        strokeWidth={2}
-                        dot={{ fill: 'hsl(var(--primary))', r: 4 }}
-                        activeDot={{ r: 6 }}
-                      />
-                    </LineChart>
+                  <ResponsiveContainer width="100%" height={400}>
+                    {chartType === "area" ? (
+                      <AreaChart data={chartData}>
+                        <defs>
+                          <linearGradient id="colorTimeline" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis 
+                          dataKey="date" 
+                          className="text-xs"
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <YAxis 
+                          className="text-xs"
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--card))', 
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                          }} 
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="count" 
+                          stroke="hsl(var(--primary))" 
+                          fillOpacity={1} 
+                          fill="url(#colorTimeline)"
+                          strokeWidth={2}
+                        />
+                      </AreaChart>
+                    ) : (
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                        <XAxis 
+                          dataKey="date" 
+                          className="text-xs"
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <YAxis 
+                          className="text-xs"
+                          tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--card))', 
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                          }} 
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="count" 
+                          stroke="hsl(var(--primary))" 
+                          strokeWidth={3}
+                          dot={{ fill: 'hsl(var(--primary))', r: 5, strokeWidth: 2, stroke: 'hsl(var(--background))' }}
+                          activeDot={{ r: 8, strokeWidth: 2, stroke: 'hsl(var(--background))' }}
+                        />
+                      </LineChart>
+                    )}
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
             </motion.div>
           </div>
-
-          {/* Word Cloud */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Cloud className="h-5 w-5" />
-                  Tag Word Cloud
-                </CardTitle>
-                <CardDescription>Visual representation of all tags across content types</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="w-full h-[400px] flex items-center justify-center">
-                  {wordCloudData.length > 0 ? (
-                    <Wordcloud
-                      words={wordCloudData}
-                      width={800}
-                      height={400}
-                      fontSize={(datum) => Math.log2(datum.value) * 10}
-                      font={'Arial'}
-                      padding={2}
-                      spiral={'archimedean'}
-                      rotate={0}
-                      random={() => 0.5}
-                    >
-                      {(cloudWords) =>
-                        cloudWords.map((w, i) => (
-                          <Text
-                            key={w.text}
-                            fill={COLORS[i % COLORS.length]}
-                            textAnchor={'middle'}
-                            transform={`translate(${w.x}, ${w.y}) rotate(${w.rotate})`}
-                            fontSize={w.size}
-                            fontFamily={w.font}
-                          >
-                            {w.text}
-                          </Text>
-                        ))
-                      }
-                    </Wordcloud>
-                  ) : (
-                    <div className="text-muted-foreground">Loading word cloud...</div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
 
           {/* Browse Content Analytics */}
           {browseAnalytics && (

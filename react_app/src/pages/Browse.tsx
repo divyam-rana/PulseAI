@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TAG_COLORS } from '@/lib/tagColors';
 import { format } from 'date-fns';
+import { getApiUrl } from '@/lib/apiUrl';
 
 interface ArxivPaper {
   paper_id: string;
@@ -63,7 +64,7 @@ export default function Browse() {
         if (selectedTag !== 'all') params.append('tag', selectedTag);
         if (searchQuery) params.append('search', searchQuery);
         
-        const response = await fetch(`http://localhost:3001/api/arxiv-papers?${params}`);
+        const response = await fetch(`${getApiUrl()}/api/arxiv-papers?${params}`);
         if (!response.ok) throw new Error('Failed to fetch papers');
         const data = await response.json();
         setPapers(data.papers || []);
@@ -87,7 +88,7 @@ export default function Browse() {
         if (selectedTag !== 'all') params.append('tag', selectedTag);
         if (searchQuery) params.append('search', searchQuery);
         
-        const response = await fetch(`http://localhost:3001/api/news-articles?${params}`);
+        const response = await fetch(`${getApiUrl()}/api/news-articles?${params}`);
         if (!response.ok) throw new Error('Failed to fetch articles');
         const data = await response.json();
         setArticles(data.articles || []);
@@ -111,7 +112,7 @@ export default function Browse() {
         if (selectedTag !== 'all') params.append('tag', selectedTag);
         if (searchQuery) params.append('search', searchQuery);
         
-        const response = await fetch(`http://localhost:3001/api/reddit-posts?${params}`);
+        const response = await fetch(`${getApiUrl()}/api/reddit-posts?${params}`);
         if (!response.ok) throw new Error('Failed to fetch posts');
         const data = await response.json();
         setPosts(data.posts || []);

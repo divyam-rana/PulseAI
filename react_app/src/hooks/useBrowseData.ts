@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import type { ArxivPaper, NewsArticle, RedditPost } from '@/types/browse';
+import { getApiUrl } from '@/lib/apiUrl';
 
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = `${getApiUrl()}/api`;
 
 interface BrowseParams {
   limit?: number;

@@ -1,10 +1,9 @@
 import { motion } from "framer-motion";
-import { Sparkles, Menu, X, Rss, Bell, BarChart3, Search, Users } from "lucide-react";
+import { Sparkles, Menu, X, Rss, Bell, BarChart3, Search, Users, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -19,9 +18,8 @@ export function Header() {
     >
       <div className="container mx-auto px-4 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
-          {/* Sidebar Trigger & Logo */}
+          {/* Logo */}
           <div className="flex items-center gap-3">
-            <SidebarTrigger className="lg:hidden" />
             <Link to="/" className="flex items-center gap-2 group">
               <motion.div whileHover={{ scale: 1.02 }}>
                 <div className="relative">
@@ -62,17 +60,6 @@ export function Header() {
               </div>
             </Link>
             <Link
-              to="/team"
-              className={`text-sm lg:text-base transition-colors ${
-                location.pathname === "/team" ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                Team
-              </div>
-            </Link>
-            <Link
               to="/analytics"
               className={`text-sm lg:text-base transition-colors ${
                 location.pathname === "/analytics" ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
@@ -81,6 +68,28 @@ export function Header() {
               <div className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4" />
                 Analytics
+              </div>
+            </Link>
+            <Link
+              to="/trends"
+              className={`text-sm lg:text-base transition-colors ${
+                location.pathname === "/trends" ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Flame className="w-4 h-4" />
+                Trends
+              </div>
+            </Link>
+            <Link
+              to="/team"
+              className={`text-sm lg:text-base transition-colors ${
+                location.pathname === "/team" ? "text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Team
               </div>
             </Link>
           </nav>
@@ -136,20 +145,28 @@ export function Header() {
                 Search
               </Link>
               <Link
-                to="/team"
-                className="text-muted-foreground hover:text-foreground transition-colors py-2 flex items-center gap-2"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <Users className="w-4 h-4" />
-                Team
-              </Link>
-              <Link
                 to="/analytics"
                 className="text-muted-foreground hover:text-foreground transition-colors py-2 flex items-center gap-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
                 <BarChart3 className="w-4 h-4" />
                 Analytics
+              </Link>
+              <Link
+                to="/trends"
+                className="text-muted-foreground hover:text-foreground transition-colors py-2 flex items-center gap-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Flame className="w-4 h-4" />
+                Trends
+              </Link>
+              <Link
+                to="/team"
+                className="text-muted-foreground hover:text-foreground transition-colors py-2 flex items-center gap-2"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Users className="w-4 h-4" />
+                Team
               </Link>
               <div className="flex gap-3 pt-4 border-t border-border/50">
                 <ThemeToggle />
