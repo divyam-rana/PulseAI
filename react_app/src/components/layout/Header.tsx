@@ -1,13 +1,20 @@
 import { motion } from "framer-motion";
-import { Sparkles, Menu, X, Rss, Bell, BarChart3, Search, Users, Flame } from "lucide-react";
+import { Sparkles, Menu, X, Rss, Bell, BarChart3, Search, Users, Flame, ExternalLink, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   return (
     <motion.header
@@ -97,10 +104,91 @@ export function Header() {
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center gap-3">
             <ThemeToggle />
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
-            </Button>
+            <Popover open={notificationOpen} onOpenChange={setNotificationOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="w-5 h-5" />
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-primary rounded-full animate-pulse" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="end">
+                <div className="p-4 border-b border-border">
+                  <h4 className="font-semibold flex items-center gap-2">
+                    <Bell className="w-4 h-4 text-primary" />
+                    Notifications
+                  </h4>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Stay updated with the latest AI newsletters
+                  </p>
+                </div>
+                <div className="p-2">
+                  <button
+                    className="w-full p-3 rounded-lg hover:bg-muted/50 transition-colors text-left group"
+                    onClick={() => {
+                      setNotificationOpen(false);
+                      navigate('/newsletters');
+                    }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                        <Rss className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium group-hover:text-primary transition-colors">
+                          New Newsletters Available
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Check out the latest AI weekly digests
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          Updated weekly
+                        </p>
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </button>
+                  <button
+                    className="w-full p-3 rounded-lg hover:bg-muted/50 transition-colors text-left group"
+                    onClick={() => {
+                      setNotificationOpen(false);
+                      navigate('/trends');
+                    }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 rounded-lg bg-orange-500/10 text-orange-500">
+                        <Flame className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium group-hover:text-primary transition-colors">
+                          Trending Topics
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          See what's trending in AI research
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          Real-time updates
+                        </p>
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </button>
+                </div>
+                <div className="p-2 border-t border-border">
+                  <Button 
+                    variant="ghost" 
+                    className="w-full justify-center text-sm"
+                    onClick={() => {
+                      setNotificationOpen(false);
+                      navigate('/coming-soon');
+                    }}
+                  >
+                    Enable Email Notifications
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
             <Link to="/coming-soon">
               <Button variant="hero" size="sm">
                 Subscribe

@@ -17,6 +17,7 @@ import { Newsletter } from "@/types/newsletter";
 import { TAG_COLORS } from "@/lib/tagColors";
 import { getApiUrl } from "@/lib/apiUrl";
 import { toast } from "sonner";
+import { NewsletterModal } from "@/components/newsletter/NewsletterModal";
 
 interface ArxivPaper {
   paper_id: string;
@@ -51,6 +52,10 @@ export default function Search() {
   const [endDate, setEndDate] = useState("");
   const [browseSearchQuery, setBrowseSearchQuery] = useState("");
   const [selectedBrowseTag, setSelectedBrowseTag] = useState<string>("all");
+  
+  // Newsletter modal state
+  const [selectedNewsletter, setSelectedNewsletter] = useState<Newsletter | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   const [papers, setPapers] = useState<ArxivPaper[]>([]);
   const [articles, setArticles] = useState<NewsArticle[]>([]);
@@ -233,6 +238,16 @@ export default function Search() {
     setSelectedTags(prev => 
       prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
     );
+  };
+
+  const openNewsletter = (newsletter: Newsletter) => {
+    setSelectedNewsletter(newsletter);
+    setIsModalOpen(true);
+  };
+
+  const closeNewsletter = () => {
+    setIsModalOpen(false);
+    setSelectedNewsletter(null);
   };
 
   return (
@@ -419,7 +434,10 @@ export default function Search() {
                           transition={{ delay: index * 0.05 }}
                           className="group"
                         >
-                          <Card className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/50 cursor-pointer">
+                          <Card 
+                            className="hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/50 cursor-pointer"
+                            onClick={() => openNewsletter(newsletter)}
+                          >
                             <CardHeader className="pb-3">
                               <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
@@ -457,6 +475,10 @@ export default function Search() {
                                   variant="ghost" 
                                   size="sm" 
                                   className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openNewsletter(newsletter);
+                                  }}
                                 >
                                   View Details
                                   <ExternalLink className="h-3 w-3 ml-1" />
@@ -836,6 +858,13 @@ export default function Search() {
       </main>
 
       <Footer />
+
+      {/* Newsletter Modal */}
+      <NewsletterModal
+        newsletter={selectedNewsletter}
+        isOpen={isModalOpen}
+        onClose={closeNewsletter}
+      />
     </div>
   );
 }
