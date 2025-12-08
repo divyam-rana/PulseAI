@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { BigQuery } from '@google-cloud/bigquery';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 dotenv.config();
 
@@ -14,10 +15,32 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Initialize BigQuery client
-const bigquery = new BigQuery({
+// Uses service account key file if GOOGLE_APPLICATION_CREDENTIALS is set
+// Otherwise falls back to default credentials (useful for Cloud Run with service account)
+const bigqueryConfig = {
   projectId: process.env.GOOGLE_CLOUD_PROJECT,
-  keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
-});
+};
+
+// Use keyFilename if GOOGLE_APPLICATION_CREDENTIALS is set and file exists
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  const keyPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  // Resolve relative paths relative to backend directory
+  const resolvedPath = path.isAbsolute(keyPath) 
+    ? keyPath 
+    : path.join(__dirname, keyPath);
+  
+  if (fs.existsSync(resolvedPath)) {
+    bigqueryConfig.keyFilename = resolvedPath;
+    console.log(`Using service account key file: ${resolvedPath}`);
+  } else {
+    console.warn(`Service account key file not found at: ${resolvedPath}`);
+    console.log('Falling back to default credentials (service account or Application Default Credentials)');
+  }
+} else {
+  console.log('No GOOGLE_APPLICATION_CREDENTIALS set, using default credentials');
+}
+
+const bigquery = new BigQuery(bigqueryConfig);
 
 const dataset = bigquery.dataset(process.env.BIGQUERY_DATASET);
 

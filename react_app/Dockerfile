@@ -40,6 +40,11 @@ RUN npm ci --production
 # Copy backend source
 COPY backend/server.js ./
 
+# Copy service account key file
+# Note: This file should NOT be committed to git (it's in .gitignore)
+# The build will fail if this file doesn't exist - ensure it's present before building
+COPY backend/service-account-key.json ./
+
 # Copy built frontend from previous stage
 WORKDIR /app
 COPY --from=frontend-build /app/dist ./frontend/dist
