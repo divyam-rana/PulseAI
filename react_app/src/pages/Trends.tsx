@@ -1,11 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, TrendingDown, Flame, ArrowUp, ArrowDown, Minus, Calendar, BarChart3, BookOpen, Newspaper, MessageSquare, PieChart as PieChartIcon, RefreshCw } from "lucide-react";
+import { TrendingUp, TrendingDown, Flame, ArrowUp, ArrowDown, Minus, Calendar, BarChart3, BookOpen, Newspaper, MessageSquare, PieChart as PieChartIcon, RefreshCw, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format, subDays } from "date-fns";
 import { getApiUrl } from '@/lib/apiUrl';
@@ -154,41 +154,68 @@ export default function Trends() {
   // Fetch all data on mount
   useEffect(() => {
     setLoading(true);
-    fetchAllData();
+    setDataLoaded(false);
+    fetchAllData().catch(error => {
+      console.error('Failed to fetch data:', error);
+      setFetchError('Failed to load data. Please try refreshing the page.');
+      setLoading(false);
+    });
+  }, []);
+
+  // Helper function to extract date from BigQuery timestamp
+  const extractDate = useCallback((dateField: any): Date | null => {
+    if (!dateField) return null;
+    
+    try {
+      // Handle BigQuery timestamp object (has .value property)
+      let dateStr: string | null = null;
+      if (typeof dateField === 'object' && dateField !== null && 'value' in dateField) {
+        dateStr = dateField.value;
+      } else if (typeof dateField === 'string') {
+        dateStr = dateField;
+      } else {
+        return null;
+      }
+      
+      if (!dateStr) return null;
+      
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) {
+        return null;
+      }
+      return date;
+    } catch (error) {
+      console.warn('Error parsing date:', dateField, error);
+      return null;
+    }
   }, []);
 
   // Calculate trends
   useEffect(() => {
     if (!dataLoaded) return;
+    
+    // Ensure we have valid arrays before processing
+    const validPapers = Array.isArray(papers) ? papers : [];
+    const validArticles = Array.isArray(articles) ? articles : [];
+    const validPosts = Array.isArray(posts) ? posts : [];
 
     setLoading(true);
     
-    const days = parseInt(dateRange);
+    const days = parseInt(dateRange) || 30;
+    
     const currentPeriodStart = subDays(new Date(), days);
     const previousPeriodStart = subDays(new Date(), days * 2);
     const previousPeriodEnd = subDays(new Date(), days);
 
-    console.log('Calculating trends:', {
-      papers: papers.length,
-      articles: articles.length,
-      posts: posts.length,
-      dateRange: days,
-      currentPeriodStart: currentPeriodStart.toISOString(),
-      previousPeriodStart: previousPeriodStart.toISOString()
-    });
-
-
-    // Helper function to filter by date
-    const filterByDate = <T extends { published_at?: any; created_utc?: any }>(
-      items: T[],
-      startDate: Date,
-      endDate?: Date
-    ): T[] => {
+    // Helper function to filter by date - defined outside try block
+    const filterByDate = (items: any[], startDate: Date, endDate?: Date): any[] => {
+      if (!Array.isArray(items) || items.length === 0) return [];
       return items.filter(item => {
+        if (!item) return false;
         const dateField = item.published_at || item.created_utc;
+        if (!dateField) return false;
         const date = extractDate(dateField);
         if (!date) return false;
-        
         if (endDate) {
           return date >= startDate && date < endDate;
         }
@@ -196,57 +223,35 @@ export default function Trends() {
       });
     };
 
-    // Process Arxiv papers
-    const currentPapers = filterByDate(papers, currentPeriodStart);
-    const previousPapers = filterByDate(papers, previousPeriodStart, previousPeriodEnd);
+    // Process data
+    const currentPapers = filterByDate(validPapers, currentPeriodStart);
+    const previousPapers = filterByDate(validPapers, previousPeriodStart, previousPeriodEnd);
+    const currentArticles = filterByDate(validArticles, currentPeriodStart);
+    const previousArticles = filterByDate(validArticles, previousPeriodStart, previousPeriodEnd);
+    const currentPosts = filterByDate(validPosts, currentPeriodStart);
+    const previousPosts = filterByDate(validPosts, previousPeriodStart, previousPeriodEnd);
 
-    // Process News articles
-    const currentArticles = filterByDate(articles, currentPeriodStart);
-    const previousArticles = filterByDate(articles, previousPeriodStart, previousPeriodEnd);
-
-    // Process Reddit posts
-    const currentPosts = filterByDate(posts, currentPeriodStart);
-    const previousPosts = filterByDate(posts, previousPeriodStart, previousPeriodEnd);
-
-    console.log('Filtered data:', {
-      currentPapers: currentPapers.length,
-      previousPapers: previousPapers.length,
-      currentArticles: currentArticles.length,
-      previousArticles: previousArticles.length,
-      currentPosts: currentPosts.length,
-      previousPosts: previousPosts.length
-    });
-
-    // Get all unique tags from all items (not just filtered)
+    // Get all unique tags
     const allTags = new Set<string>();
-    [...papers, ...articles, ...posts].forEach(item => {
-      if (item.tags && Array.isArray(item.tags)) {
-        item.tags.forEach(tag => {
+    [...validPapers, ...validArticles, ...validPosts].forEach(item => {
+      if (item?.tags && Array.isArray(item.tags)) {
+        item.tags.forEach((tag: string) => {
           if (tag && typeof tag === 'string') {
-            allTags.add(tag);
+            allTags.add(tag.trim());
           }
         });
       }
     });
 
-    console.log('Found tags:', Array.from(allTags));
-
-    // Calculate trends for each tag and source
+    // Calculate trends for each tag
     const tagTrends: TrendData[] = [];
 
     Array.from(allTags).forEach(tag => {
       // Arxiv trends
       if (activeSource === 'all' || activeSource === 'arxiv') {
-        const currentCount = currentPapers.filter(p => {
-          const itemTags = p.tags || [];
-          return Array.isArray(itemTags) && itemTags.includes(tag);
-        }).length;
-        const previousCount = previousPapers.filter(p => {
-          const itemTags = p.tags || [];
-          return Array.isArray(itemTags) && itemTags.includes(tag);
-        }).length;
+        const currentCount = currentPapers.filter(p => p?.tags?.includes(tag)).length;
+        const previousCount = previousPapers.filter(p => p?.tags?.includes(tag)).length;
         
-        // Include if there's any data in current or previous period
         if (currentCount > 0 || previousCount > 0) {
           const change = currentCount - previousCount;
           const changePercent = previousCount > 0 
@@ -265,14 +270,8 @@ export default function Trends() {
 
       // News trends
       if (activeSource === 'all' || activeSource === 'news') {
-        const currentCount = currentArticles.filter(a => {
-          const itemTags = a.tags || [];
-          return Array.isArray(itemTags) && itemTags.includes(tag);
-        }).length;
-        const previousCount = previousArticles.filter(a => {
-          const itemTags = a.tags || [];
-          return Array.isArray(itemTags) && itemTags.includes(tag);
-        }).length;
+        const currentCount = currentArticles.filter(a => a?.tags?.includes(tag)).length;
+        const previousCount = previousArticles.filter(a => a?.tags?.includes(tag)).length;
         
         if (currentCount > 0 || previousCount > 0) {
           const change = currentCount - previousCount;
@@ -292,14 +291,8 @@ export default function Trends() {
 
       // Reddit trends
       if (activeSource === 'all' || activeSource === 'reddit') {
-        const currentCount = currentPosts.filter(p => {
-          const itemTags = p.tags || [];
-          return Array.isArray(itemTags) && itemTags.includes(tag);
-        }).length;
-        const previousCount = previousPosts.filter(p => {
-          const itemTags = p.tags || [];
-          return Array.isArray(itemTags) && itemTags.includes(tag);
-        }).length;
+        const currentCount = currentPosts.filter(p => p?.tags?.includes(tag)).length;
+        const previousCount = previousPosts.filter(p => p?.tags?.includes(tag)).length;
         
         if (currentCount > 0 || previousCount > 0) {
           const change = currentCount - previousCount;
@@ -318,36 +311,30 @@ export default function Trends() {
       }
     });
 
-    // Sort by absolute change percentage
+    // Sort and set trends
     const sortedTrends = tagTrends.sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent));
-    console.log('Calculated trends:', sortedTrends.length);
     setTrends(sortedTrends);
 
-    // Calculate comprehensive tag analysis across all sources
+    // Calculate tag analysis
     const tagAnalysisMap = new Map<string, { total: number; arxiv: number; news: number; reddit: number }>();
     
-    // Count tags across all items (not filtered by date for overall analysis)
-    [...papers, ...articles, ...posts].forEach(item => {
-      const itemTags = item.tags || [];
-      if (Array.isArray(itemTags)) {
-        itemTags.forEach(tag => {
-          if (tag && typeof tag === 'string') {
-            if (!tagAnalysisMap.has(tag)) {
-              tagAnalysisMap.set(tag, { total: 0, arxiv: 0, news: 0, reddit: 0 });
-            }
-            const counts = tagAnalysisMap.get(tag)!;
-            counts.total++;
-            
-            // Determine source
-            if ('paper_id' in item) counts.arxiv++;
-            else if ('id' in item && 'url' in item) counts.news++;
-            else if ('post_id' in item) counts.reddit++;
-          }
-        });
-      }
+    [...validPapers, ...validArticles, ...validPosts].forEach(item => {
+      if (!item?.tags || !Array.isArray(item.tags)) return;
+      item.tags.forEach((tag: string) => {
+        if (!tag || typeof tag !== 'string') return;
+        const cleanTag = tag.trim();
+        if (!tagAnalysisMap.has(cleanTag)) {
+          tagAnalysisMap.set(cleanTag, { total: 0, arxiv: 0, news: 0, reddit: 0 });
+        }
+        const counts = tagAnalysisMap.get(cleanTag)!;
+        counts.total++;
+        if ('paper_id' in item) counts.arxiv++;
+        else if ('id' in item && 'url' in item) counts.news++;
+        else if ('post_id' in item) counts.reddit++;
+      });
     });
 
-    const totalItems = papers.length + articles.length + posts.length;
+    const totalItems = validPapers.length + validArticles.length + validPosts.length;
     const analysis: TagAnalysis[] = Array.from(tagAnalysisMap.entries())
       .map(([tag, counts]) => ({
         tag,
@@ -358,21 +345,25 @@ export default function Trends() {
         percentage: totalItems > 0 ? (counts.total / totalItems) * 100 : 0
       }))
       .sort((a, b) => b.total - a.total)
-      .slice(0, 20); // Top 20 tags
+      .slice(0, 20);
 
     setTagAnalysis(analysis);
     setLoading(false);
-  }, [papers, articles, posts, dateRange, activeSource, dataLoaded]);
+  }, [papers, articles, posts, dateRange, activeSource, dataLoaded, extractDate]);
 
-  const topTrending = trends
-    .filter(t => t.change > 0)
-    .sort((a, b) => b.changePercent - a.changePercent)
-    .slice(0, 5);
+  const topTrending = Array.isArray(trends) 
+    ? trends
+        .filter(t => t && t.change > 0)
+        .sort((a, b) => b.changePercent - a.changePercent)
+        .slice(0, 5)
+    : [];
 
-  const declining = trends
-    .filter(t => t.change < 0)
-    .sort((a, b) => a.changePercent - b.changePercent)
-    .slice(0, 5);
+  const declining = Array.isArray(trends)
+    ? trends
+        .filter(t => t && t.change < 0)
+        .sort((a, b) => a.changePercent - b.changePercent)
+        .slice(0, 5)
+    : [];
 
   const getSourceIcon = (source: string) => {
     switch (source) {
@@ -398,74 +389,55 @@ export default function Trends() {
     return tag.replace(/\s*\(Arxiv\)|\s*\(News\)|\s*\(Reddit\)/g, '');
   };
 
-  // Helper function to extract date from BigQuery timestamp
-  const extractDate = (dateField: any): Date | null => {
-    if (!dateField) return null;
-    
-    // Handle BigQuery timestamp object (has .value property)
-    let dateStr: string | null = null;
-    if (typeof dateField === 'object' && dateField !== null && 'value' in dateField) {
-      dateStr = dateField.value;
-    } else if (typeof dateField === 'string') {
-      dateStr = dateField;
-    } else {
-      return null;
-    }
-    
-    if (!dateStr) return null;
-    
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) {
-        console.warn('Invalid date string:', dateStr);
-        return null;
-      }
-      return date;
-    } catch (error) {
-      console.warn('Error parsing date:', dateStr, error);
-      return null;
-    }
-  };
-
   // Calculate filtered counts for current period - use useMemo for reactivity
   const { filteredPapersCount, filteredArticlesCount, filteredPostsCount } = useMemo(() => {
-    const currentPeriodStart = subDays(new Date(), parseInt(dateRange));
-    
-    const papersCount = papers.filter(p => {
-      const date = extractDate(p.published_at);
-      if (!date) {
-        console.warn('Paper missing date:', p.paper_id, p.published_at);
-        return false;
-      }
-      return date >= currentPeriodStart;
-    }).length;
-    
-    const articlesCount = articles.filter(a => {
-      const date = extractDate(a.published_at);
-      if (!date) return false;
-      return date >= currentPeriodStart;
-    }).length;
-    
-    const postsCount = posts.filter(p => {
-      const date = extractDate(p.created_utc);
-      if (!date) return false;
-      return date >= currentPeriodStart;
-    }).length;
-    
-    console.log('Filtered counts:', {
-      papers: { total: papers.length, filtered: papersCount },
-      articles: { total: articles.length, filtered: articlesCount },
-      posts: { total: posts.length, filtered: postsCount },
-      dateRange,
-      currentPeriodStart: currentPeriodStart.toISOString()
-    });
-    
-    return {
-      filteredPapersCount: papersCount,
-      filteredArticlesCount: articlesCount,
-      filteredPostsCount: postsCount
-    };
-  }, [papers, articles, posts, dateRange]);
+    try {
+      const days = parseInt(dateRange) || 30;
+      const currentPeriodStart = subDays(new Date(), days);
+      
+      const papersCount = Array.isArray(papers) ? papers.filter(p => {
+        if (!p) return false;
+        const date = extractDate(p.published_at);
+        if (!date) return false;
+        return date >= currentPeriodStart;
+      }).length : 0;
+      
+      const articlesCount = Array.isArray(articles) ? articles.filter(a => {
+        if (!a) return false;
+        const date = extractDate(a.published_at);
+        if (!date) return false;
+        return date >= currentPeriodStart;
+      }).length : 0;
+      
+      const postsCount = Array.isArray(posts) ? posts.filter(p => {
+        if (!p) return false;
+        const date = extractDate(p.created_utc);
+        if (!date) return false;
+        return date >= currentPeriodStart;
+      }).length : 0;
+      
+      console.log('Filtered counts:', {
+        papers: { total: papers.length, filtered: papersCount },
+        articles: { total: articles.length, filtered: articlesCount },
+        posts: { total: posts.length, filtered: postsCount },
+        dateRange: days,
+        currentPeriodStart: currentPeriodStart.toISOString()
+      });
+      
+      return {
+        filteredPapersCount: papersCount,
+        filteredArticlesCount: articlesCount,
+        filteredPostsCount: postsCount
+      };
+    } catch (error) {
+      console.error('Error calculating filtered counts:', error);
+      return {
+        filteredPapersCount: 0,
+        filteredArticlesCount: 0,
+        filteredPostsCount: 0
+      };
+    }
+  }, [papers, articles, posts, dateRange, extractDate]);
 
   return (
     <div className="min-h-screen bg-background">
