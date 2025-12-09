@@ -1,0 +1,1 @@
+This is a Jupyter notebook containing our code for evaluation of prompts for Gen AI summaries. This method was used to experiment and determine the best prompt with a human-in-the-loop for final validation.
