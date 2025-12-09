@@ -4,63 +4,68 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const teamMembers = [
   {
     name: "Brendan",
-    role: "Full-Stack Engineer",
-    bio: "Expert in building scalable web applications with React and Node.js. Passionate about creating intuitive user experiences and clean architecture.",
+    role: "DAG Engineer",
+    bio: "'DAG man' manages PulseAI's pipeline orchestration and efficiency using Airflow and Astronomer. He also assists in data curation, quality assurance, and transformation throughout the PulseAI ecosystem",
     avatar: "BK",
+    image: "/team-brendan.png",
     color: "bg-gradient-to-br from-blue-500 to-cyan-500",
-    expertise: ["React", "TypeScript", "Cloud Architecture"],
-    github: "https://github.com",
-    linkedin: "https://linkedin.com",
-    email: "brendan@pulseai.com"
+    expertise: ["Airflow", "Astronomer", "Data Engineering"],
+    github: "https://github.com/divyam-rana/PulseAI",
+    linkedin: "https://www.linkedin.com/in/brendanjwilcox/",
+    email: "bjwilcox@bu.edu"
   },
   {
     name: "Divyam",
-    role: "Product Lead & Architect",
-    bio: "Visionary product leader driving the PulseAI roadmap. Combines technical expertise with strategic thinking to deliver impactful solutions.",
+    role: "AI Systems & Product Architect",
+    bio: "Leads the end-to-end vision and architecture for PulseAI, from product strategy to shipped features. Worked on building both the newsletter platform and the core AI/ML systems that powers it.",
     avatar: "DR",
+    image: "/team-divyam.jpeg",
     color: "bg-gradient-to-br from-indigo-500 to-purple-500",
-    expertise: ["Product Strategy", "System Design", "Leadership"],
-    github: "https://github.com",
-    linkedin: "https://linkedin.com",
-    email: "divyam@pulseai.com"
+    expertise: ["AI/ML Product Design", "System & data architecture", "Product strategy"],
+    github: "https://github.com/divyam-rana/PulseAI",
+    linkedin: "https://www.linkedin.com/in/divyamrana/",
+    email: "divyamrana@gmail.com"
   },
   {
     name: "Shin",
     role: "Data Engineer",
-    bio: "BigQuery wizard and data pipeline architect. Transforms complex data into actionable insights with elegant ETL solutions.",
+    bio: "Designing scalable ETL/ELT workflows, optimizing storage, and ensuring data is always accessible and trustworthy.",
     avatar: "SL",
+    image: "/team-shin.png",
     color: "bg-gradient-to-br from-green-500 to-emerald-500",
     expertise: ["BigQuery", "Data Pipelines", "Analytics"],
-    github: "https://github.com",
-    linkedin: "https://linkedin.com",
-    email: "shin@pulseai.com"
+    github: "https://github.com/divyam-rana/PulseAI",
+    linkedin: "https://www.linkedin.com/in/shrinidhibhide/",
+    email: "sdbhide@bu.edu"
   },
   {
-    name: "Siddhant",
+    name: "Sidhant",
     role: "ML Engineer",
-    bio: "Develops cutting-edge embeddings and recommendation systems. Bridges the gap between research and production-ready ML solutions.",
+    bio: "Designing, training, and optimizing machine learning pipelines with strong focus on MLOps and real-time performance.",
     avatar: "SP",
+    image: "/team-sid.png",
     color: "bg-gradient-to-br from-orange-500 to-red-500",
-    expertise: ["Embeddings", "Recommender Systems", "Python"],
-    github: "https://github.com",
-    linkedin: "https://linkedin.com",
-    email: "siddhant@pulseai.com"
+    expertise: ["MLOps", "Pipeline Orchestration", "Cloud Functions"],
+    github: "https://github.com/divyam-rana/PulseAI",
+    linkedin: "https://www.linkedin.com/in/sidhant-/",
+    email: "sidhant@pbu.edu"
   },
   {
     name: "Zoey",
-    role: "AI Research Lead",
-    bio: "Specializes in natural language processing and semantic search algorithms. PhD in Machine Learning with 5+ years of experience in production AI systems.",
+    role: "AI Engineer",
+    bio: "Guided signal extraction, curated high-value AI research and industry updates, and produced a concise weekly digest through structured analysis and LLM-assisted synthesis.",
     avatar: "ZM",
+    image: "/team-zoey.png",
     color: "bg-gradient-to-br from-purple-500 to-pink-500",
-    expertise: ["NLP", "Deep Learning", "MLOps"],
-    github: "https://github.com",
-    linkedin: "https://linkedin.com",
-    email: "zoey@pulseai.com"
+    expertise: ["AI", "Gen AI", "MLOps"],
+    github: "https://github.com/divyam-rana/PulseAI",
+    linkedin: "https://www.linkedin.com/in/huawan-zhong/",
+    email: "huawan@bu.edu"
   }
 ];
 
@@ -99,8 +104,13 @@ export default function Team() {
                   <CardContent className="p-6 space-y-4">
                     {/* Avatar and Name */}
                     <div className="flex flex-col items-center text-center space-y-3">
-                      <Avatar className={`h-24 w-24 ${member.color} text-white text-2xl font-bold`}>
-                        <AvatarFallback className="bg-transparent">
+                      <Avatar className="h-28 w-28 border-4 border-primary/20 shadow-lg">
+                        <AvatarImage 
+                          src={member.image} 
+                          alt={member.name}
+                          className="object-cover"
+                        />
+                        <AvatarFallback className={`${member.color} text-white text-2xl font-bold`}>
                           {member.avatar}
                         </AvatarFallback>
                       </Avatar>
@@ -189,12 +199,12 @@ export default function Team() {
               </p>
               <div className="flex flex-wrap gap-4 justify-center pt-4">
                 <Button size="lg" asChild>
-                  <a href="mailto:careers@pulseai.com">
+                  <a href="mailto:divyam07@bu.edu">
                     View Open Positions
                   </a>
                 </Button>
                 <Button size="lg" variant="outline" asChild>
-                  <a href="mailto:hello@pulseai.com">
+                  <a href="mailto:divyam07@bu.edu">
                     Get in Touch
                   </a>
                 </Button>
